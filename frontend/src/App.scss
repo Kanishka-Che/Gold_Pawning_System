@@ -1,0 +1,68 @@
+@use "./styles/variables" as *;
+
+.app-shell {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: linear-gradient(135deg, #a81631, #6c0b20);
+}
+
+.app-container {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+  background: $red-dark;
+}
+
+.main-content {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+  background: linear-gradient(145deg, #710d22, #4b0716);
+}
+
+.page-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 28px;
+
+  scrollbar-width: thin;
+  scrollbar-color: $gold $red-dark;
+
+  &::-webkit-scrollbar {
+    width: 7px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: $red-dark;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $gold;
+    border-radius: 10px;
+  }
+}
+
+.coming-soon {
+  padding: 40px;
+  background: $panel-background;
+  border: 1px solid $border-red;
+  border-radius: $radius-lg;
+
+  h2 {
+    color: $gold;
+  }
+}
+
+@media (max-width: 750px) {
+  .page-content {
+    padding: 16px;
+  }
+}

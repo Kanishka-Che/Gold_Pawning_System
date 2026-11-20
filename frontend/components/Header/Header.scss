@@ -1,0 +1,60 @@
+@use "../../src/styles/variables" as *;
+
+.topbar {
+  height: 72px;
+  background: #570a1b;
+  border-bottom: 1px solid #a92e44;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 30px;
+
+  .topbar-title {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: $white;
+
+    .topbar-gold {
+      color: $gold;
+    }
+  }
+
+  .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    color: $gold;
+  }
+
+  .notification-icon {
+    display: grid;
+    place-items: center;
+    cursor: default;
+  }
+
+  .user-avatar {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #a52038;
+    border: 1px solid $gold;
+  }
+}
+
+@media (max-width: 600px) {
+  .topbar {
+    padding: 0 15px;
+
+    .topbar-title {
+      font-size: 12px;
+    }
+
+    .topbar-actions {
+      gap: 12px;
+    }
+  }
+}

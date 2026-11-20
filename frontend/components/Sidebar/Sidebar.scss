@@ -1,0 +1,138 @@
+@use "../../src/styles/variables" as *;
+
+/* =========================
+   SIDEBAR
+========================= */
+
+.sidebar {
+    height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  width: 240px;
+  flex-shrink: 0;
+  background: $red-sidebar;
+  border-right: 1px solid #b83b4f;
+  display: flex;
+  flex-direction: column;
+  padding: 22px 13px;
+  transition: width 0.25s ease;
+
+  &.collapsed {
+    width: 76px;
+  }
+
+  .sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 38px;
+  }
+
+  .brand-icon {
+    width: 39px;
+    height: 39px;
+    display: grid;
+    place-items: center;
+    color: $red-dark;
+    background: $gold;
+    border-radius: 11px;
+    flex-shrink: 0;
+  }
+
+  .brand-text {
+    display: flex;
+    flex-direction: column;
+    white-space: nowrap;
+
+    strong {
+      font-size: 14px;
+      color: $gold;
+    }
+
+    small {
+      font-size: 10px;
+      color: #f5c9d2;
+    }
+  }
+
+  .collapse-btn {
+    margin-left: auto;
+    border: none;
+    color: $gold;
+    background: transparent;
+    padding: 5px;
+  }
+
+  .menu-heading {
+    color: $gold;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin: 0 12px 14px;
+    min-height: 12px;
+  }
+
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .nav-item {
+    width: 100%;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #f7e3e7;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 13px 14px;
+    border-radius: 10px;
+    text-align: left;
+    font-size: 13px;
+    white-space: nowrap;
+
+    &:hover {
+      background: #98203a;
+    }
+
+    &.active {
+      background: $red-bright;
+      border-color: $gold;
+      color: $gold-light;
+      font-weight: 600;
+    }
+  }
+
+  &.collapsed .nav-item {
+    justify-content: center;
+    padding: 13px 8px;
+  }
+
+  .sidebar-bottom {
+    margin-top: auto;
+    border-top: 1px solid #9d3147;
+    padding-top: 15px;
+
+    .nav-item:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+  }
+}
+
+@media (max-width: 750px) {
+  .sidebar {
+    width: 76px;
+
+    .brand-text,
+    .nav-item span,
+    .menu-heading {
+      display: none;
+    }
+
+    .nav-item {
+      justify-content: center;
+    }
+  }
+}
