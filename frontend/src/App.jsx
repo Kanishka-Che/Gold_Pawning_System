@@ -1,56 +1,95 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar/Sidebar.jsx";
 import Header from "../components/Header/Header.jsx";
 import Dashboard from "./pages/Dashboard/Dashboard.jsx";
 import Customers from "./pages/Customers/Customers.jsx";
 import Login from "./pages/Login/Login.jsx";
+import { apiFetch } from "../utils/api.js";
 import "./App.scss";
 
 function App() {
   const [activePage, setActivePage] = useState("Dashboard");
   const [collapsed, setCollapsed] = useState(false);
 
-  const [auth, setAuth] = useState(() => {
-    const token = sessionStorage.getItem("sigiri_token");
-    const userString = sessionStorage.getItem("sigiri_user");
+  const [auth, setAuth] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [loggingOut, setLoggingOut] = useState(false);
 
-    if (!token || !userString) return null;
+  useEffect(() => {
+    let cancelled = false;
 
-    try {
-      return {
-        token,
-        user: JSON.parse(userString),
-      };
-    } catch {
-      sessionStorage.removeItem("sigiri_token");
-      sessionStorage.removeItem("sigiri_user");
-      return null;
-    }
-  });
+    const checkAuthentication = async () => {
+      try {
+        const response = await apiFetch("/api/auth/me");
+
+        if (!response.ok) {
+          throw new Error("Session invalid");
+        }
+
+        const data = await response.json();
+
+        if (!data.success || !data.user) {
+          throw new Error("Invalid user");
+        }
+
+        if (!cancelled) {
+          setAuth({ user: data.user });
+        }
+      } catch {
+        if (!cancelled) {
+          setAuth(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setAuthLoading(false);
+        }
+      }
+    };
+
+    checkAuthentication();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleLogin = (data) => {
-    sessionStorage.setItem("sigiri_token", data.token);
-    sessionStorage.setItem(
-      "sigiri_user",
-      JSON.stringify(data.user)
+    setAuth({ user: data.user });
+    setActivePage("Dashboard");
+  };
+
+  const handleLogout = async () => {
+    if (loggingOut) return;
+
+    setLoggingOut(true);
+
+    try {
+      const response = await apiFetch("/api/auth/logout", {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("Logout failed");
+      }
+
+      setAuth(null);
+      setActivePage("Dashboard");
+    } catch (error) {
+      console.error("Logout error:", error);
+      alert("Logout failed. Please try again.");
+    } finally {
+      setLoggingOut(false);
+    }
+  };
+
+  if (authLoading) {
+    return (
+      <div className="auth-loading">
+        <p>Checking your session...</p>
+      </div>
     );
-
-    setAuth({
-      token: data.token,
-      user: data.user,
-    });
-
-    setActivePage("Dashboard");
-  };
-
-  const handleLogout = () => {
-    sessionStorage.removeItem("sigiri_token");
-    sessionStorage.removeItem("sigiri_user");
-
-    setAuth(null);
-    setActivePage("Dashboard");
-  };
+  }
 
   if (!auth) {
     return <Login onLogin={handleLogin} />;
@@ -64,6 +103,7 @@ function App() {
           setActivePage={setActivePage}
           collapsed={collapsed}
           setCollapsed={setCollapsed}
+          onLogout={handleLogout}
         />
 
         <main className="main-content">
@@ -83,26 +123,6 @@ function App() {
           </div>
         </main>
       </div>
-
-      <button
-        type="button"
-        onClick={handleLogout}
-        style={{
-          position: "fixed",
-          bottom: 18,
-          right: 18,
-          zIndex: 1000,
-          padding: "11px 18px",
-          background: "#f4c430",
-          color: "#321017",
-          border: "none",
-          borderRadius: 9,
-          fontWeight: 700,
-          cursor: "pointer",
-        }}
-      >
-        Logout ({auth.user.username})
-      </button>
     </div>
   );
 }

@@ -20,16 +20,17 @@ export default function Login({ onLogin }) {
 
     try {
       const response = await fetch(`${API_URL}/api/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
-      });
+  method: "POST",
+  credentials: "include",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ username, password }),
+});
 
       const data = await response.json();
 
-      if (!response.ok || !data.success || !data.token) {
+      if (!response.ok || !data.success || !data.user) {
         throw new Error(data.message || "Login failed");
       }
 

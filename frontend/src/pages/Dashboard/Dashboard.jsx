@@ -10,8 +10,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import "./Dashboard.scss";
-
-const API_URL = "http://localhost:5000";
+import { apiFetch } from "../../../utils/api";
 
 export default function Dashboard() {
   const [customers, setCustomers] = useState([]);
@@ -23,7 +22,7 @@ export default function Dashboard() {
 
     const fetchCustomers = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/customers`, {
+        const response = await apiFetch("/api/customers", {
           signal: controller.signal,
         });
 
