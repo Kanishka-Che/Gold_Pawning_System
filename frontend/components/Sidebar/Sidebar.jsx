@@ -27,30 +27,44 @@ export default function Sidebar({
   setActivePage,
   collapsed,
   setCollapsed,
+  onLogout,
 }) {
   return (
     <aside className={`sidebar ${collapsed ? "collapsed" : ""}`}>
-      <div className="sidebar-brand">
-        <div className="brand-icon">
-          <Gem size={23} />
-        </div>
+      
+<div className="sidebar-brand">
+  <button
+    type="button"
+    className="brand-icon"
+    onClick={() => {
+      if (collapsed) setCollapsed(false);
+    }}
+    title={collapsed ? "Expand sidebar" : "Zriolab Gold"}
+    aria-label={collapsed ? "Expand sidebar" : "Zriolab Gold"}
+  >
+    <Gem size={23} />
+  </button>
 
-        {!collapsed && (
-          <div className="brand-text">
-            <strong>Zriolab Gold</strong>
-            <small>Pawning System</small>
-          </div>
-        )}
+  {!collapsed && (
+    <div className="brand-text">
+      <strong>Zriolab Gold</strong>
+      <small>Pawning System</small>
+    </div>
+  )}
 
-        <button
-          className="collapse-btn"
-          onClick={() => setCollapsed(!collapsed)}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          aria-label="Toggle sidebar"
-        >
-          {collapsed ? <Menu size={18} /> : <ChevronLeft size={18} />}
-        </button>
-      </div>
+  {!collapsed && (
+    <button
+      type="button"
+      className="collapse-btn"
+      onClick={() => setCollapsed(true)}
+      title="Collapse sidebar"
+      aria-label="Collapse sidebar"
+    >
+      <ChevronLeft size={18} />
+    </button>
+  )}
+</div>
+
 
       <div className="menu-heading">
         {!collapsed && "MAIN MENU"}
@@ -77,15 +91,16 @@ export default function Sidebar({
       </nav>
 
       <div className="sidebar-bottom">
-        <button
-          className="nav-item"
-          disabled
-          title="Logout will be available after authentication"
-        >
-          <LogOut size={19} />
-          {!collapsed && <span>Logout</span>}
-        </button>
-      </div>
+  <button
+    type="button"
+    className="nav-item"
+    onClick={onLogout}
+    title="Logout"
+  >
+    <LogOut size={19} />
+    {!collapsed && <span>Logout</span>}
+  </button>
+</div>
     </aside>
   );
 }

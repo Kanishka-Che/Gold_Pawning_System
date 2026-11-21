@@ -1,25 +1,45 @@
 
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import Session from "../models/Session.js";
 
 export const protect = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = req.cookies?.sigiri_auth;
 
-    if (!authHeader?.startsWith("Bearer ")) {
+    if (!token) {
       return res.status(401).json({
         success: false,
         message: "Not authorized. Please login.",
       });
     }
 
-    const token = authHeader.split(" ")[1];
-
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET,
       { algorithms: ["HS256"] }
     );
+
+    if (!decoded.userId || !decoded.sessionId) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid session",
+      });
+    }
+
+    const session = await Session.findOne({
+      sessionId: decoded.sessionId,
+      userId: decoded.userId,
+      revokedAt: null,
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (!session) {
+      return res.status(401).json({
+        success: false,
+        message: "Session expired or revoked",
+      });
+    }
 
     const user = await User.findById(decoded.userId);
 
@@ -31,11 +51,13 @@ export const protect = async (req, res, next) => {
     }
 
     req.user = user;
+    req.sessionId = decoded.sessionId;
+
     next();
   } catch (error) {
     return res.status(401).json({
       success: false,
-      message: "Invalid or expired token",
+      message: "Invalid or expired session",
     });
   }
 };
