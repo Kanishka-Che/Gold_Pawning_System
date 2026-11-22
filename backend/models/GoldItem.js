@@ -68,7 +68,7 @@ reservedForLoan: {
 );
 
 // Validate weights
-goldItemSchema.pre("validate", function (next) {
+goldItemSchema.pre("validate", function () {
   if (
     this.grossWeight != null &&
     this.deductionWeight != null

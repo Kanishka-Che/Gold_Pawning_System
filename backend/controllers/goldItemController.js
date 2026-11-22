@@ -21,13 +21,19 @@ const isValidationError = (error) =>
   error.name === "CastError";
 
 // POST /api/gold-items
+
 export const createGoldItem = async (req, res) => {
+  console.log("=== GOLD ITEM CREATE REQUEST ===");
+  console.log("Request Body:", req.body);
+  console.log("Logged In User:", req.user?._id);
+
   if (!isValidBody(req.body)) {
     return res.status(400).json({
       success: false,
       message: "Invalid gold item data",
     });
   }
+
 
   const fields = Object.keys(req.body);
 
@@ -82,23 +88,26 @@ export const createGoldItem = async (req, res) => {
       message: "Gold item created successfully",
       goldItem,
     });
-  } catch (error) {
-    if (isValidationError(error)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid gold item data",
-      });
-    }
+  
 
-    console.error("Create Gold Item Error:", error);
+} catch (error) {
+  console.error("Gold Item Creation Error:", error);
 
-    return res.status(500).json({
+  if (isValidationError(error)) {
+    return res.status(400).json({
       success: false,
-      message: "Failed to create gold item",
+      message: "Invalid gold item data",
     });
-  } finally {
-    await session.endSession();
   }
+
+  return res.status(500).json({
+    success: false,
+    message: "Failed to create gold item",
+  });
+} finally {
+  await session.endSession();
+}
+
 };
 
 // GET /api/gold-items
