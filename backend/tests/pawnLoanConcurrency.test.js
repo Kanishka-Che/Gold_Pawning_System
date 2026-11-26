@@ -69,10 +69,15 @@ test("Concurrent loan creation cannot reserve the same gold item twice", async (
 
     await LoanSettings.create({
       settingsKey: "default",
-      interest: {
-        rate: 2,
-        calculationMethod: "monthly",
-      },
+      
+interest: {
+  rate: 2,
+  calculationMethod: "monthly",
+  principalCalculationMethod: "original_principal",
+  minimumInterestDays: 0,
+  chargeFullFirstMonth: false,
+},
+
       loan: {
         defaultDurationMonths: 6,
       },
@@ -81,7 +86,7 @@ test("Concurrent loan creation cannot reserve the same gold item twice", async (
     const makeRequest = () => ({
       user: {
         _id: cashierId,
-        role: "cashier",
+        role: "staff",
         isActive: true,
       },
       ip: "127.0.0.1",

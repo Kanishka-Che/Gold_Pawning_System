@@ -14,35 +14,73 @@ export default function PawnLoans() {
   const [pawnLoans, setPawnLoans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedLoanId, setSelectedLoanId] = useState(null);
+const [statusFilter, setStatusFilter] = useState("all");
+const [currentPage, setCurrentPage] = useState(1);
+const [totalPages, setTotalPages] = useState(1);
+const [totalLoans, setTotalLoans] = useState(0);
+const [searchInput, setSearchInput] = useState("");
+const [searchQuery, setSearchQuery] = useState("");
 
-  const fetchPawnLoans = async () => {
-    try {
-      setLoading(true);
-      setError("");
 
-      const response = await apiFetch(
-        "/api/pawn-loans?page=1&limit=20"
-      );
+const fetchPawnLoans = async (
+  status = "all",
+  page = 1,
+  search = ""
+) => {
+  try {
+    setLoading(true);
+    setError("");
 
-      const data = await response.json();
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: "20",
+    });
 
-      if (!response.ok || !data.success) {
-        throw new Error(
-          data.message || "Failed to load pawn loans."
-        );
-      }
-
-      setPawnLoans(data.pawnLoans);
-    } catch (err) {
-      setError(err.message || "Something went wrong.");
-    } finally {
-      setLoading(false);
+    if (status !== "all") {
+      params.set("status", status);
     }
-  };
 
-  useEffect(() => {
-    fetchPawnLoans();
-  }, []);
+    if (search.trim()) {
+  params.set("search", search.trim());
+}
+
+    const response = await apiFetch(
+      `/api/pawn-loans?${params.toString()}`
+    );
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(
+        data.message || "Failed to fetch pawn loans"
+      );
+    }
+const safeTotalPages = Math.max(
+  1,
+  Number(data.totalPages) || 1
+);
+
+setTotalPages(safeTotalPages);
+setTotalLoans(Number(data.total) || 0);
+
+if (page > safeTotalPages) {
+  setCurrentPage(safeTotalPages);
+  return;
+}
+
+setPawnLoans(data.pawnLoans);
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+useEffect(() => {
+  fetchPawnLoans(statusFilter, currentPage, searchQuery);
+}, [statusFilter, currentPage, searchQuery]);
+
 
   const handleGoldItemCreated = (goldItem) => {
     setActiveForm(null);
@@ -51,21 +89,30 @@ export default function PawnLoans() {
     );
   };
 
-  const handlePawnLoanCreated = (loan) => {
-    setActiveForm(null);
-    setMessage(
-      `Draft pawn loan created successfully: ${
-        loan.loanNumber || loan._id
-      }`
-    );
-    fetchPawnLoans();
-  };
+  
+const handlePawnLoanCreated = (loan) => {
+  setActiveForm(null);
+
+  setMessage(
+    `Draft pawn loan created successfully: ${
+      loan.loanNumber || loan._id
+    }`
+  );
+
+  fetchPawnLoans(
+    statusFilter,
+    currentPage,
+    searchQuery
+  );
+};
+
 
   const formatAmount = (amount) =>
     new Intl.NumberFormat("en-LK", {
       style: "currency",
       currency: "LKR",
     }).format(amount);
+
 
   return (
     <div className="pawn-loans-page">
@@ -115,6 +162,61 @@ export default function PawnLoans() {
 
       <h2>Pawn Loans</h2>
 
+
+<div className="pawn-loan-filters">
+  <label htmlFor="loanStatusFilter">Filter by Status:</label>
+
+  <select
+    id="loanStatusFilter"
+    value={statusFilter}
+   onChange={(e) => {
+  setCurrentPage(1);
+  setStatusFilter(e.target.value);
+}}
+  >
+    <option value="all">All Loans</option>
+    <option value="draft">Draft</option>
+    <option value="active">Active</option>
+    <option value="redeemed">Redeemed</option>
+    <option value="cancelled">Cancelled</option>
+    <option value="closed">Closed</option>
+  </select>
+</div>
+
+<form
+  className="pawn-loan-search"
+  onSubmit={(e) => {
+    e.preventDefault();
+    setCurrentPage(1);
+    setSearchQuery(searchInput.trim());
+  }}
+>
+  <input
+    type="text"
+    placeholder="Search Loan Number or Customer NIC"
+    value={searchInput}
+    onChange={(e) => setSearchInput(e.target.value)}
+    maxLength={100}
+  />
+
+  <button type="submit">
+    Search
+  </button>
+
+  <button
+    type="button"
+    className="clear-search-btn"
+    onClick={() => {
+      setSearchInput("");
+      setSearchQuery("");
+      setCurrentPage(1);
+    }}
+  >
+    Clear
+  </button>
+</form>
+
+
       {loading ? (
         <p>Loading pawn loans...</p>
       ) : pawnLoans.length === 0 ? (
@@ -140,7 +242,11 @@ export default function PawnLoans() {
                   {loan.customer?.fullName || "Unknown"}
                 </td>
                 <td>{formatAmount(loan.principalAmount)}</td>
-                <td>{loan.status}</td>
+                <td>
+  <span className={`loan-status-badge ${loan.status}`}>
+    {loan.status}
+  </span>
+</td>
                 <td>
                   {loan.issueDate
                     ? new Date(loan.issueDate).toLocaleDateString(
@@ -163,12 +269,69 @@ export default function PawnLoans() {
         </table>
       )}
 
-      {selectedLoanId && (
+{selectedLoanId && (
   <PawnLoanDetails
     loanId={selectedLoanId}
     onClose={() => setSelectedLoanId(null)}
+    onCancelled={(cancelledLoanId) => {
+      setPawnLoans((previous) =>
+        previous.map((loan) =>
+          loan._id === cancelledLoanId
+            ? { ...loan, status: "cancelled" }
+            : loan
+        )
+      );
+
+      fetchPawnLoans(
+        statusFilter,
+        currentPage,
+        searchQuery
+      );
+    }}
+    onActivated={(activatedLoanId) => {
+      setPawnLoans((previous) =>
+        previous.map((loan) =>
+          loan._id === activatedLoanId
+            ? { ...loan, status: "active" }
+            : loan
+        )
+      );
+
+      fetchPawnLoans(
+        statusFilter,
+        currentPage,
+        searchQuery
+      );
+    }}
   />
 )}
+
+
+<div className="pawn-loan-pagination">
+  <span>
+    Total Loans: {totalLoans} | Page{" "}
+    {totalLoans === 0 ? 0 : currentPage} of {totalLoans === 0 ? 0 : totalPages}
+  </span>
+
+  <div className="pagination-buttons">
+    <button
+      type="button"
+      disabled={loading || currentPage <= 1}
+      onClick={() => setCurrentPage((p) => p - 1)}
+    >
+      Previous
+    </button>
+
+    <button
+      type="button"
+      disabled={loading || currentPage >= totalPages}
+      onClick={() => setCurrentPage((p) => p + 1)}
+    >
+      Next
+    </button>
+  </div>
+</div>
+
     </div>
   );
 }

@@ -1,3 +1,4 @@
+
 import {
   LayoutDashboard,
   Users,
@@ -7,10 +8,10 @@ import {
   FileText,
   Settings,
   LogOut,
-  Menu,
   ChevronLeft,
 } from "lucide-react";
 import "./Sidebar.scss";
+
 
 const menuItems = [
   { label: "Dashboard", icon: LayoutDashboard },
@@ -19,8 +20,15 @@ const menuItems = [
   { label: "Payments", icon: Wallet },
   { label: "Renewals", icon: RefreshCw },
   { label: "Reports", icon: FileText },
-  { label: "Settings", icon: Settings },
+  {
+    label: "System Settings",
+    icon: Settings,
+    adminOnly: true,
+  },
 ];
+
+
+
 
 export default function Sidebar({
   activePage,
@@ -28,7 +36,9 @@ export default function Sidebar({
   collapsed,
   setCollapsed,
   onLogout,
+  user,
 }) {
+
   return (
     <aside className={`sidebar ${collapsed ? "collapsed" : ""}`}>
       
@@ -71,7 +81,11 @@ export default function Sidebar({
       </div>
 
       <nav className="sidebar-nav">
-        {menuItems.map((item) => {
+        
+{menuItems
+  .filter((item) => !item.adminOnly || user?.role === "admin")
+  .map((item) => {
+
           const Icon = item.icon;
 
           return (

@@ -27,7 +27,9 @@ export default function CreatePawnLoanForm({
         const [customerResponse, goldResponse] =
           await Promise.all([
             apiFetch("/api/customers?status=active"),
-            apiFetch("/api/gold-items?status=draft&limit=100"),
+            
+apiFetch("/api/gold-items?available=true&limit=100"),
+
           ]);
 
         const customerData = await customerResponse.json();
@@ -179,8 +181,27 @@ export default function CreatePawnLoanForm({
                 checked={selectedGoldItems.includes(item._id)}
                 onChange={() => toggleGoldItem(item._id)}
               />
-              {item.itemType} - {item.karat} -{" "}
-              {item.netWeight} g
+           
+
+<div>
+  <strong>
+    {item.goldItemCode || "Code Pending"} -{" "}
+    {item.itemType}
+  </strong>
+
+  <div>
+    {item.karat} | Net Weight: {item.netWeight} g
+    {" | "}Gross Weight: {item.grossWeight} g
+  </div>
+
+  {item.description && (
+    <div>
+      Description: {item.description}
+    </div>
+  )}
+</div>
+
+
             </label>
           ))}
         </div>

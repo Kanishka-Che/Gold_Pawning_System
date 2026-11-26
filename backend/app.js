@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import customerRoutes from "./routes/customerRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import loanSettingsRoutes from "./routes/loanSettingsRoutes.js";
+import systemSettingsRoutes from "./routes/systemSettingsRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import auditLogRoutes from "./routes/auditLogRoutes.js";
 import goldItemRoutes from "./routes/goldItemRoutes.js";
@@ -64,6 +65,7 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/loan-settings", loanSettingsRoutes);
+app.use("/api/system-settings", systemSettingsRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/audit-logs", auditLogRoutes);
 app.use("/api/gold-items", goldItemRoutes);

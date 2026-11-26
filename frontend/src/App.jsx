@@ -7,6 +7,7 @@ import Customers from "./pages/Customers/Customers.jsx";
 import PawnLoans from "./pages/PawnLoans/PawnLoans.jsx";
 import Login from "./pages/Login/Login.jsx";
 import { apiFetch } from "../utils/api.js";
+import SystemSettings from "./pages/Settings/SystemSettings.jsx";
 import "./App.scss";
 
 function App() {
@@ -103,13 +104,16 @@ const checkAuthentication = async () => {
   return (
     <div className="app-shell">
       <div className="app-container">
-        <Sidebar
-          activePage={activePage}
-          setActivePage={setActivePage}
-          collapsed={collapsed}
-          setCollapsed={setCollapsed}
-          onLogout={handleLogout}
-        />
+        
+<Sidebar
+  activePage={activePage}
+  setActivePage={setActivePage}
+  collapsed={collapsed}
+  setCollapsed={setCollapsed}
+  onLogout={handleLogout}
+  user={auth.user}
+/>
+
 
         <main className="main-content">
           <Header />
@@ -122,6 +126,8 @@ const checkAuthentication = async () => {
   <Customers />
 ) : activePage === "Pawn Loans" ? (
   <PawnLoans />
+) : activePage === "System Settings" && auth.user?.role === "admin" ? (
+  <SystemSettings />
 ) : (
   <div className="coming-soon">
     <h2>{activePage}</h2>

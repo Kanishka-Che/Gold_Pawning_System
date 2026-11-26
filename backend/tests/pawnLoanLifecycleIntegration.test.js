@@ -75,10 +75,15 @@ test("Pawn loan creation and activation preserves original settings", async () =
 
     await LoanSettings.create({
       settingsKey: "default",
-      interest: {
-        rate: 2,
-        calculationMethod: "monthly",
-      },
+     
+interest: {
+  rate: 2,
+  calculationMethod: "monthly",
+  principalCalculationMethod: "original_principal",
+  minimumInterestDays: 0,
+  chargeFullFirstMonth: false,
+},
+
       loan: {
         defaultDurationMonths: 6,
       },

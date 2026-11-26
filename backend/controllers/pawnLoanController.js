@@ -6,6 +6,16 @@ import GoldItem from "../models/GoldItem.js";
 import PawnLoan from "../models/PawnLoan.js";
 import LoanSettings from "../models/LoanSettings.js";
 import { createAuditLog } from "../utils/auditLogger.js";
+import PawnPayment from "../models/PawnPayment.js";
+
+import {
+  calculateRemainingPrincipalDailyInterest,
+} from "../utils/remainingPrincipalInterest.js";
+
+import {
+  calculateOutstandingInterest,
+} from "../utils/outstandingInterest.js";
+
 
 import { generateLoanNumber } from "../utils/generateLoanNumber.js";
 
@@ -83,6 +93,45 @@ export const createPawnLoan = async (req, res) => {
         error.statusCode = 400;
         throw error;
       }
+
+
+const interestSettings = settings.interest;
+
+const allowedPrincipalMethods = [
+  "original_principal",
+  "remaining_principal",
+];
+
+const principalMethod =
+  interestSettings?.principalCalculationMethod;
+
+const calculationMethod =
+  interestSettings?.calculationMethod;
+
+const isSupportedCombination =
+  principalMethod === "original_principal" &&
+  ["monthly", "daily"].includes(calculationMethod) ||
+  principalMethod === "remaining_principal" &&
+  calculationMethod === "daily";
+
+if (
+  !allowedPrincipalMethods.includes(principalMethod) ||
+  !isSupportedCombination ||
+  !Number.isSafeInteger(
+    interestSettings?.minimumInterestDays
+  ) ||
+  interestSettings.minimumInterestDays !== 0 ||
+  interestSettings.chargeFullFirstMonth !== false
+) {
+  const error = new Error(
+    "Loan interest settings are unconfirmed or unsupported. " +
+    "Ask an Admin to configure a supported interest calculation method."
+  );
+
+  error.statusCode = 409;
+  throw error;
+}
+
 
       if (
         settings.loan.maximumLoanAmount != null &&
@@ -242,6 +291,59 @@ export const getPawnLoans = async (req, res) => {
 
     const filter = {};
 
+
+if (req.query.search !== undefined) {
+  const search = req.query.search;
+
+  if (
+    typeof search !== "string" ||
+    !search.trim() ||
+    search.length > 100
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid search value",
+    });
+  }
+
+  const searchText = search.trim();
+
+  // Escape regex special characters
+  const escapedSearch = searchText.replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&"
+  );
+
+  // Find customers matching NIC
+  
+const matchingCustomers = await Customer.find({
+  nic: searchText,
+})
+  .select("_id")
+  .lean();
+
+
+  const customerIds = matchingCustomers.map(
+    (customer) => customer._id
+  );
+
+  // Search by Loan Number OR Customer NIC
+  filter.$or = [
+    {
+      loanNumber: {
+        $regex: escapedSearch,
+        $options: "i",
+      },
+    },
+    {
+      customer: {
+        $in: customerIds,
+      },
+    },
+  ];
+}
+
+
     if (req.query.status !== undefined) {
       
 const allowedStatuses = [
@@ -334,10 +436,12 @@ export const getPawnLoanById = async (req, res) => {
         "customer",
         "customerCode fullName nic phone address status"
       )
-      .populate(
-        "goldItems",
-        "itemType description karat grossWeight deductionWeight netWeight status"
-      )
+      
+.populate(
+  "goldItems",
+  "goldItemCode itemType description karat grossWeight deductionWeight netWeight status"
+)
+
       
 .populate("createdBy", "username")
 .populate("cancelledBy", "username");
@@ -661,95 +765,202 @@ export const activatePawnLoan = async (req, res) => {
 
 
  // GET /api/pawn-loans/:id/interest-preview
+
 export const getPawnLoanInterestPreview = async (req, res) => {
-  try {
-    if (!mongoose.isObjectIdOrHexString(req.params.id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid pawn loan ID",
-      });
-    }
-
-    const loan = await PawnLoan.findById(req.params.id)
-      .select(
-        "loanNumber principalAmount issueDate status settingsSnapshot"
-      )
-      .lean();
-
-    if (!loan) {
-      return res.status(404).json({
-        success: false,
-        message: "Pawn loan not found",
-      });
-    }
-
-    if (loan.status !== "active") {
-      return res.status(409).json({
-        success: false,
-        message: "Interest preview is available only for active loans",
-      });
-    }
-
-    const interestSettings = loan.settingsSnapshot?.interest;
-
-    if (!interestSettings) {
-      return res.status(409).json({
-        success: false,
-        message: "Loan interest settings are missing",
-      });
-    }
-
-    const calculationDate = new Date();
-
-    const period = calculateInterestPeriod({
-      issueDate: loan.issueDate,
-      calculationDate,
-    });
-
-    const result = calculateLoanInterest({
-      principalAmount: loan.principalAmount,
-      interestSettings,
-      months: period.months,
-      days: period.days,
-    });
-
-    return res.status(200).json({
-      success: true,
-      preview: {
-        loanNumber: loan.loanNumber,
-        loanStatus: loan.status,
-        issueDate: loan.issueDate,
-        calculationDate,
-        elapsedDays: period.days,
-        chargedMonths: period.months,
-        currency: "LKR",
-        ...result,
-        isFinalSettlementAmount: false,
-      },
-    });
-  
-} catch (error) {
-  const unsupportedRule =
-    error.message ===
-      "Minimum interest days and full first month rules are not yet supported" ||
-    error.message ===
-      "Principal calculation method is not yet supported";
-
-  if (unsupportedRule) {
-    return res.status(409).json({
+  if (!mongoose.isObjectIdOrHexString(req.params.id)) {
+    return res.status(400).json({
       success: false,
-      code: "INTEREST_RULE_NOT_SUPPORTED",
-      message:
-        "Interest preview is unavailable because this loan uses an unconfirmed or unsupported interest rule.",
+      message: "Invalid pawn loan ID",
     });
   }
 
-  console.error("Pawn Loan Interest Preview Error:", error);
+  const session = await mongoose.startSession();
 
-  return res.status(500).json({
+  try {
+    let preview;
+
+    await session.withTransaction(
+      async () => {
+        const loan = await PawnLoan.findById(req.params.id)
+          .select(
+            "loanNumber principalAmount issueDate status settingsSnapshot"
+          )
+          .session(session)
+          .lean();
+
+        if (!loan) {
+          const error = new Error("Pawn loan not found");
+          error.statusCode = 404;
+          throw error;
+        }
+
+        if (loan.status !== "active") {
+          const error = new Error(
+            "Interest preview is available only for active loans"
+          );
+          error.statusCode = 409;
+          throw error;
+        }
+
+        const interestSettings = loan.settingsSnapshot?.interest;
+
+        if (!interestSettings) {
+          const error = new Error("Loan interest settings are missing");
+          error.statusCode = 409;
+          throw error;
+        }
+
+        const calculationDate = new Date();
+
+        const period = calculateInterestPeriod({
+          issueDate: loan.issueDate,
+          calculationDate,
+        });
+
+        const paymentRecords = await PawnPayment.find({
+          pawnLoan: loan._id,
+          paidAt: { $lte: calculationDate },
+        })
+          .select("paidAt principalPaid interestPaid")
+          .sort({ paidAt: 1, _id: 1 })
+          .session(session)
+          .lean();
+
+        const payments = paymentRecords.map((payment) => ({
+          paidAt: payment.paidAt.toISOString(),
+          principalPaid: payment.principalPaid,
+          interestPaid: payment.interestPaid,
+        }));
+
+        const {
+          calculationMethod,
+          principalCalculationMethod,
+          minimumInterestDays,
+          chargeFullFirstMonth,
+          rate,
+        } = interestSettings;
+
+        if (
+          !Number.isSafeInteger(minimumInterestDays) ||
+          minimumInterestDays !== 0 ||
+          chargeFullFirstMonth !== false
+        ) {
+          const error = new Error("Unsupported interest rules");
+          error.statusCode = 409;
+          throw error;
+        }
+
+        let result;
+
+        if (principalCalculationMethod === "original_principal") {
+          const originalResult = calculateLoanInterest({
+            principalAmount: loan.principalAmount,
+            interestSettings,
+            months: period.months,
+            days: period.days,
+          });
+
+          const balances = calculateOutstandingInterest({
+            accruedInterest: originalResult.interestAmount,
+            payments,
+          });
+
+          result = {
+            ...originalResult,
+            ...balances,
+          };
+        } else if (
+          principalCalculationMethod === "remaining_principal" &&
+          calculationMethod === "daily"
+        ) {
+          const remainingResult =
+            calculateRemainingPrincipalDailyInterest({
+              originalPrincipal: loan.principalAmount,
+              issueDate: loan.issueDate.toISOString(),
+              calculationDate: calculationDate.toISOString(),
+              payments,
+              monthlyRate: rate,
+            });
+
+          const balances = calculateOutstandingInterest({
+            accruedInterest: remainingResult.accruedInterest,
+            payments,
+          });
+
+          result = {
+            ...remainingResult,
+            ...balances,
+          };
+        } else {
+          const error = new Error("Unsupported interest calculation method");
+          error.statusCode = 409;
+          throw error;
+        }
+
+       
+preview = {
+  loanNumber: loan.loanNumber,
+  loanStatus: loan.status,
+  issueDate: loan.issueDate,
+  calculationDate,
+  elapsedDays: period.days,
+  chargedMonths:
+    calculationMethod === "monthly" ? period.months : null,
+  currency: "LKR",
+
+  ...result,
+
+  // Return the loan's saved calculation methods
+  calculationMethod,
+  principalCalculationMethod,
+
+  isFinalSettlementAmount: false,
+};
+
+      },
+      {
+        readConcern: { level: "snapshot" },
+        readPreference: "primary",
+      }
+    );
+
+    return res.status(200).json({
+      success: true,
+      preview,
+    });
+  } catch (error) {
+   if (error.statusCode === 404 || error.statusCode === 409) {
+  return res.status(error.statusCode).json({
     success: false,
-    message: "Failed to calculate interest preview",
+    ...(error.statusCode === 409
+      ? { code: "INTEREST_RULE_NOT_SUPPORTED" }
+      : {}),
+    message: error.message,
   });
 }
 
+    const knownCalculationErrors = [
+      "Minimum interest days and full first month rules are not yet supported",
+      "Principal calculation method is not yet supported",
+      "Total interest paid exceeds accrued interest",
+    ];
+
+    if (knownCalculationErrors.includes(error.message)) {
+      return res.status(409).json({
+        success: false,
+        code: "INTEREST_CALCULATION_CONFLICT",
+        message: "Interest preview cannot be calculated with current loan data.",
+      });
+    }
+
+    console.error("Pawn Loan Interest Preview Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to calculate interest preview",
+    });
+  } finally {
+    await session.endSession();
+  }
 };
+
