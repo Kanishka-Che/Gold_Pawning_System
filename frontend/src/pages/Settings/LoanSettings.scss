@@ -1,0 +1,143 @@
+
+.loan-settings-page {
+  padding: 24px;
+  color: #222;
+}
+
+.loan-settings-header {
+  margin-bottom: 24px;
+
+  h1 {
+    color: #991b1b;
+    margin-bottom: 8px;
+  }
+
+  p {
+    color: #666;
+  }
+}
+
+.loan-settings-card {
+  background: #fff;
+  padding: 24px;
+  border: 1px solid #e5e5e5;
+  border-top: 4px solid #d4a017;
+  border-radius: 12px;
+  max-width: 720px;
+
+  h2 {
+    margin-bottom: 24px;
+    color: #991b1b;
+  }
+}
+
+.loan-settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  label {
+    font-weight: 600;
+  }
+
+  select {
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 14px;
+  }
+
+  small {
+    color: #777;
+  }
+}
+
+.loan-settings-warning {
+  margin-top: 24px;
+  padding: 14px;
+  border: 1px solid #e8d8aa;
+  border-radius: 8px;
+  background: #fff8e6;
+  color: #805b00;
+}
+
+
+.loan-settings-field {
+  margin-bottom: 20px;
+
+  input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #f8f8f8;
+    color: #333;
+    font-size: 14px;
+    box-sizing: border-box;
+  }
+
+  input:read-only {
+    cursor: default;
+  }
+}
+
+
+.loan-settings-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+
+  h2 {
+    margin: 0;
+  }
+
+  span {
+    color: #777;
+    font-size: 13px;
+  }
+}
+
+.loan-settings-field {
+  input:disabled,
+  select:disabled {
+    background: #f5f5f5;
+    color: #444;
+    opacity: 1;
+    cursor: default;
+  }
+}
+
+.loan-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+  margin-bottom: 20px;
+
+  button {
+    padding: 11px 18px;
+    border: none;
+    border-radius: 8px;
+    background: #991b1b;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    &:last-child:not(:first-child) {
+      background: #333;
+    }
+  }
+}
+.loan-settings-success {
+  color: #167a38;
+  font-weight: 600;
+  margin-top: 12px;
+}

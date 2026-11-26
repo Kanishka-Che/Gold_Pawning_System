@@ -7,6 +7,14 @@ import {
 } from "../controllers/pawnLoanRedemptionController.js";
 
 import {
+  getPawnLoanPaymentHistory,
+} from "../controllers/pawnLoanPaymentHistoryController.js";
+
+import {
+  getPawnLoanTransactionHistory,
+} from "../controllers/pawnLoanTransactionHistoryController.js";
+
+import {
   getOverduePawnLoans,
 } from "../controllers/pawnLoanOverdueController.js";
 
@@ -118,5 +126,21 @@ router.get(
   getPawnLoanRedemptionHistory
 );
 
+// GET /api/pawn-loans/:id/transactions?page=1&limit=20
+// Read-only combined transaction history
+router.get(
+  "/:id/transactions",
+  authorize("admin", "staff"),
+  getPawnLoanTransactionHistory
+);
+
+
+// GET /api/pawn-loans/:id/payments
+// Read-only payment history
+router.get(
+  "/:id/payments",
+  authorize("admin", "staff"),
+  getPawnLoanPaymentHistory
+);
 
 export default router;

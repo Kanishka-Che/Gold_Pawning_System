@@ -137,3 +137,21 @@ export const logoutUser = async (req, res) => {
     });
   }
 };
+
+
+
+export const getSessionStatus = (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  return res.status(200).json({
+    success: true,
+    authenticated: Boolean(req.user),
+    user: req.user
+      ? {
+          id: req.user._id,
+          username: req.user.username,
+          role: req.user.role,
+        }
+      : null,
+  });
+};

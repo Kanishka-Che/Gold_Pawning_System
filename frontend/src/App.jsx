@@ -4,8 +4,10 @@ import Sidebar from "../components/Sidebar/Sidebar.jsx";
 import Header from "../components/Header/Header.jsx";
 import Dashboard from "./pages/Dashboard/Dashboard.jsx";
 import Customers from "./pages/Customers/Customers.jsx";
+import PawnLoans from "./pages/PawnLoans/PawnLoans.jsx";
 import Login from "./pages/Login/Login.jsx";
 import { apiFetch } from "../utils/api.js";
+import SystemSettings from "./pages/Settings/SystemSettings.jsx";
 import "./App.scss";
 
 function App() {
@@ -19,33 +21,37 @@ function App() {
   useEffect(() => {
     let cancelled = false;
 
-    const checkAuthentication = async () => {
-      try {
-        const response = await apiFetch("/api/auth/me");
 
-        if (!response.ok) {
-          throw new Error("Session invalid");
-        }
+const checkAuthentication = async () => {
+  try {
+    const response = await apiFetch("/api/auth/session");
 
-        const data = await response.json();
+    if (!response.ok) {
+      throw new Error("Session check failed");
+    }
 
-        if (!data.success || !data.user) {
-          throw new Error("Invalid user");
-        }
+    const data = await response.json();
 
-        if (!cancelled) {
-          setAuth({ user: data.user });
-        }
-      } catch {
-        if (!cancelled) {
-          setAuth(null);
-        }
-      } finally {
-        if (!cancelled) {
-          setAuthLoading(false);
-        }
+    if (!cancelled) {
+      if (data.success && data.authenticated && data.user) {
+        setAuth({ user: data.user });
+      } else {
+        setAuth(null);
       }
-    };
+    }
+  } catch (error) {
+    console.error("Session check error:", error);
+
+    if (!cancelled) {
+      setAuth(null);
+    }
+  } finally {
+    if (!cancelled) {
+      setAuthLoading(false);
+    }
+  }
+};
+
 
     checkAuthentication();
 
@@ -98,28 +104,37 @@ function App() {
   return (
     <div className="app-shell">
       <div className="app-container">
-        <Sidebar
-          activePage={activePage}
-          setActivePage={setActivePage}
-          collapsed={collapsed}
-          setCollapsed={setCollapsed}
-          onLogout={handleLogout}
-        />
+        
+<Sidebar
+  activePage={activePage}
+  setActivePage={setActivePage}
+  collapsed={collapsed}
+  setCollapsed={setCollapsed}
+  onLogout={handleLogout}
+  user={auth.user}
+/>
+
 
         <main className="main-content">
           <Header />
 
           <div className="page-content">
-            {activePage === "Dashboard" ? (
-              <Dashboard />
-            ) : activePage === "Customers" ? (
-              <Customers />
-            ) : (
-              <div className="coming-soon">
-                <h2>{activePage}</h2>
-                <p>This module is under development.</p>
-              </div>
-            )}
+           
+{activePage === "Dashboard" ? (
+  <Dashboard />
+) : activePage === "Customers" ? (
+  <Customers />
+) : activePage === "Pawn Loans" ? (
+  <PawnLoans />
+) : activePage === "System Settings" && auth.user?.role === "admin" ? (
+  <SystemSettings />
+) : (
+  <div className="coming-soon">
+    <h2>{activePage}</h2>
+    <p>This module is under development.</p>
+  </div>
+)}
+
           </div>
         </main>
       </div>

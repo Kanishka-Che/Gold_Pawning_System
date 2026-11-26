@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import { randomUUID } from "node:crypto";
 
 import PawnLoan from "../models/PawnLoan.js";
+import PawnPayment from "../models/PawnPayment.js";
 import {
   getPawnLoanInterestPreview,
 } from "../controllers/pawnLoanController.js";
@@ -184,6 +185,113 @@ test("Pawn loan interest preview integration", async () => {
     assert.equal(draftResponse.statusCode, 409);
 
     console.log("Draft loan interest preview blocked: PASSED");
+
+
+    // 5. Remaining principal + daily interest preview
+    const dailySettings = {
+      ...baseSettings,
+      calculationMethod: "daily",
+      principalCalculationMethod: "remaining_principal",
+    };
+
+    const dailyLoan = await createLoan({
+      loanNumber: "SIG-TEST-000005",
+      status: "active",
+      interestSettings: dailySettings,
+    });
+
+    const paymentDate = new Date("2026-11-10T06:00:00Z");
+
+    await PawnPayment.create({
+      pawnLoan: dailyLoan._id,
+      idempotencyKey: randomUUID(),
+      amount: 21000,
+      interestPaid: 1000,
+      principalPaid: 20000,
+      paymentMethod: "cash",
+      paidAt: paymentDate,
+      recordedBy: userId,
+      reference: "Integration test payment",
+    });
+
+    const dailyResponse = await preview(dailyLoan._id);
+
+    assert.equal(
+      dailyResponse.statusCode,
+      200,
+      JSON.stringify(dailyResponse.body)
+    );
+
+    const dailyPreview = dailyResponse.body.preview;
+
+    assert.equal(
+      dailyPreview.calculationMethod,
+      "daily"
+    );
+
+    assert.equal(
+      dailyPreview.principalCalculationMethod,
+      "remaining_principal"
+    );
+
+    assert.equal(
+      dailyPreview.originalPrincipal,
+      "100000.00"
+    );
+
+    assert.equal(
+      dailyPreview.outstandingPrincipal,
+      "80000.00"
+    );
+
+    assert.equal(
+      dailyPreview.totalInterestPaid,
+      "1000.00"
+    );
+
+    assert.equal(
+      dailyPreview.isFinalSettlementAmount,
+      false
+    );
+
+    assert.equal(
+      dailyPreview.periods.length,
+      2
+    );
+
+    console.log(
+      "Remaining principal daily preview integration: PASSED"
+    );
+
+    // 6. Monthly remaining principal must remain blocked
+    const unsupportedMonthlyLoan = await createLoan({
+      loanNumber: "SIG-TEST-000006",
+      status: "active",
+      interestSettings: {
+        ...baseSettings,
+        calculationMethod: "monthly",
+        principalCalculationMethod: "remaining_principal",
+      },
+    });
+
+    const unsupportedMonthlyResponse = await preview(
+      unsupportedMonthlyLoan._id
+    );
+
+    assert.equal(
+      unsupportedMonthlyResponse.statusCode,
+      409
+    );
+
+    assert.equal(
+      unsupportedMonthlyResponse.body.code,
+      "INTEREST_RULE_NOT_SUPPORTED"
+    );
+
+    console.log(
+      "Monthly remaining principal blocked: PASSED"
+    );
+
 
   } finally {
     if (connected) {

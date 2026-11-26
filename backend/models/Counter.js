@@ -6,11 +6,14 @@ const counterSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  sequence: {
-    type: Number,
-    required: true,
-    default: 0,
-  },
+  
+sequence: {
+  type: Number,
+  required: true,
+  default: 0,
+  min: 0,
+},
+
 });
 
 const Counter = mongoose.model("Counter", counterSchema);

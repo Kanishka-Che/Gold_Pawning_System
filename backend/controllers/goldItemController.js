@@ -2,6 +2,7 @@
 import mongoose from "mongoose";
 import GoldItem from "../models/GoldItem.js";
 import { createAuditLog } from "../utils/auditLogger.js";
+import Counter from "../models/Counter.js";
 
 const editableFields = [
   "itemType",
@@ -21,13 +22,19 @@ const isValidationError = (error) =>
   error.name === "CastError";
 
 // POST /api/gold-items
+
 export const createGoldItem = async (req, res) => {
+  console.log("=== GOLD ITEM CREATE REQUEST ===");
+  console.log("Request Body:", req.body);
+  console.log("Logged In User:", req.user?._id);
+
   if (!isValidBody(req.body)) {
     return res.status(400).json({
       success: false,
       message: "Invalid gold item data",
     });
   }
+
 
   const fields = Object.keys(req.body);
 
@@ -46,59 +53,84 @@ export const createGoldItem = async (req, res) => {
   try {
     let goldItem;
 
-    await session.withTransaction(async () => {
-      const [createdItem] = await GoldItem.create(
-        [
-          {
-            ...req.body,
-            createdBy: req.user._id,
-            status: "draft",
-          },
-        ],
-        { session }
-      );
+ 
+await session.withTransaction(async () => {
+  // Generate the next unique Gold Item Code
+  const counter = await Counter.findByIdAndUpdate(
+    "goldItemCode",
+    { $inc: { sequence: 1 } },
+    {
+      new: true,
+      upsert: true,
+      session,
+      runValidators: true,
+    }
+  );
 
-      goldItem = createdItem;
+  const goldItemCode = `GLD-${String(
+    counter.sequence
+  ).padStart(6, "0")}`;
 
-      await createAuditLog({
-        req,
-        action: "GOLD_ITEM_CREATED",
-        targetType: "GoldItem",
-        targetId: goldItem._id,
-        details: {
-          itemType: goldItem.itemType,
-          karat: goldItem.karat,
-          grossWeight: goldItem.grossWeight,
-          deductionWeight: goldItem.deductionWeight,
-          netWeight: goldItem.netWeight,
-          status: goldItem.status,
-        },
-        session,
-      });
-    });
+  // Create Gold Item
+  const [createdItem] = await GoldItem.create(
+    [
+      {
+        ...req.body,
+        goldItemCode,
+        createdBy: req.user._id,
+        status: "draft",
+      },
+    ],
+    { session }
+  );
+
+  goldItem = createdItem;
+
+  // Create Audit Log
+  await createAuditLog({
+    req,
+    action: "GOLD_ITEM_CREATED",
+    targetType: "GoldItem",
+    targetId: goldItem._id,
+    details: {
+      goldItemCode: goldItem.goldItemCode,
+      itemType: goldItem.itemType,
+      karat: goldItem.karat,
+      grossWeight: goldItem.grossWeight,
+      deductionWeight: goldItem.deductionWeight,
+      netWeight: goldItem.netWeight,
+      status: goldItem.status,
+    },
+    session,
+  });
+});
+
 
     return res.status(201).json({
       success: true,
       message: "Gold item created successfully",
       goldItem,
     });
-  } catch (error) {
-    if (isValidationError(error)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid gold item data",
-      });
-    }
+  
 
-    console.error("Create Gold Item Error:", error);
+} catch (error) {
+  console.error("Gold Item Creation Error:", error);
 
-    return res.status(500).json({
+  if (isValidationError(error)) {
+    return res.status(400).json({
       success: false,
-      message: "Failed to create gold item",
+      message: "Invalid gold item data",
     });
-  } finally {
-    await session.endSession();
   }
+
+  return res.status(500).json({
+    success: false,
+    message: "Failed to create gold item",
+  });
+} finally {
+  await session.endSession();
+}
+
 };
 
 // GET /api/gold-items
@@ -122,6 +154,25 @@ export const getGoldItems = async (req, res) => {
 
     const filter = {};
 
+
+if (req.query.available !== undefined) {
+  if (
+    req.query.available !== "true" &&
+    req.query.available !== "false"
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid available filter",
+    });
+  }
+
+  if (req.query.available === "true") {
+    filter.status = "draft";
+    filter.reservedForLoan = null;
+  }
+}
+
+
     if (req.query.status !== undefined) {
       if (
         !["draft", "pledged", "released"].includes(
@@ -133,6 +184,20 @@ export const getGoldItems = async (req, res) => {
           message: "Invalid gold item status",
         });
       }
+
+      
+if (
+  req.query.available === "true" &&
+  req.query.status !== undefined &&
+  req.query.status !== "draft"
+) {
+  return res.status(400).json({
+    success: false,
+    message:
+      "Available gold items filter only supports draft status",
+  });
+}
+
 
       filter.status = req.query.status;
     }

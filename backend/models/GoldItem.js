@@ -3,6 +3,18 @@ import mongoose from "mongoose";
 
 const goldItemSchema = new mongoose.Schema(
   {
+
+
+goldItemCode: {
+  type: String,
+  trim: true,
+  unique: true,
+  sparse: true,
+  immutable: true,
+  match: /^GLD-\d{6,}$/,
+},
+
+
     itemType: {
       type: String,
       required: true,
@@ -68,7 +80,7 @@ reservedForLoan: {
 );
 
 // Validate weights
-goldItemSchema.pre("validate", function (next) {
+goldItemSchema.pre("validate", function () {
   if (
     this.grossWeight != null &&
     this.deductionWeight != null

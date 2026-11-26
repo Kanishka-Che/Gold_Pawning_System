@@ -35,22 +35,26 @@ test("Admin partial payment settings MongoDB integration", async () => {
 
     const adminId = new mongoose.Types.ObjectId();
 
-    const req = {
-      body: {
-        partialPayment: {
-          enabled: true,
-          allowPartialInterest: true,
-          allowPartialPrincipal: false,
-        },
-      },
-      user: {
-        _id: adminId,
-        role: "admin",
-        isActive: true,
-      },
-      ip: "127.0.0.1",
-      get: () => "Sigiri Integration Test",
-    };
+   const req = {
+  body: {
+    expectedVersion: 1,
+
+    partialPayment: {
+      enabled: true,
+      allowPartialInterest: true,
+      allowPartialPrincipal: false,
+    },
+  },
+
+  user: {
+    _id: adminId,
+    role: "admin",
+    isActive: true,
+  },
+
+  ip: "127.0.0.1",
+  get: () => "Sigiri Integration Test",
+};
 
     const createResponse = () => ({
       statusCode: 200,
@@ -108,9 +112,18 @@ test("Admin partial payment settings MongoDB integration", async () => {
     console.log("Settings audit log created: PASSED");
 
     // Repeating the same settings should not create a change.
-    const secondResponse = createResponse();
+   // Repeating the same settings should not create a change.
+const secondResponse = createResponse();
 
-    await updateLoanSettings(req, secondResponse);
+const retryReq = {
+  ...req,
+  body: {
+    ...req.body,
+    expectedVersion: 2,
+  },
+};
+
+await updateLoanSettings(retryReq, secondResponse);
 
     assert.equal(secondResponse.statusCode, 200);
 
@@ -129,6 +142,46 @@ test("Admin partial payment settings MongoDB integration", async () => {
     assert.equal(auditCount, 1);
 
     console.log("Unchanged settings do not create audit: PASSED");
+
+    // Reject an update based on an outdated settings version.
+    const staleResponse = createResponse();
+
+    const staleReq = {
+      ...req,
+      body: {
+        expectedVersion: 1,
+        partialPayment: {
+          enabled: false,
+        },
+      },
+    };
+
+    await updateLoanSettings(staleReq, staleResponse);
+
+    assert.equal(staleResponse.statusCode, 409);
+
+    const settingsAfterConflict =
+      await LoanSettings.findOne({
+        settingsKey: "default",
+      });
+
+    assert.equal(settingsAfterConflict.version, 2);
+    assert.equal(
+      settingsAfterConflict.partialPayment.enabled,
+      true
+    );
+
+    const auditCountAfterConflict =
+      await AuditLog.countDocuments({
+        action: "LOAN_SETTINGS_UPDATED",
+        targetId: settings._id,
+      });
+
+    assert.equal(auditCountAfterConflict, 1);
+
+    console.log("Stale settings version rejected: PASSED");
+    console.log("Settings unchanged after conflict: PASSED");
+
   } finally {
     if (connected) {
       await mongoose.connection.dropDatabase();

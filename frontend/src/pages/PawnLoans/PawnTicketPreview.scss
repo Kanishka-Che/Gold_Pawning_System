@@ -1,0 +1,1073 @@
+
+.pawn-ticket-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.pawn-ticket-modal {
+  width: 900px;
+  max-width: 100%;
+  max-height: 90vh;
+  overflow: auto;
+  background: #f1f1f1;
+  border-radius: 12px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.pawn-ticket-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+
+  h3 {
+    margin: 0;
+    font-size: 20px;
+    color: #800020;
+  }
+
+  button {
+    background: #800020;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 18px;
+    font-size: 14px;
+    cursor: pointer;
+
+    &:hover {
+      background: #600018;
+    }
+  }
+}
+
+.pawn-ticket-paper {
+  position: relative;
+  width: 210mm;
+  min-height: 148mm;
+  margin: 0 auto;
+  padding: 8mm;
+  box-sizing: border-box;
+  background: #ffffff;
+  color: #111111;
+  font-family: Arial, sans-serif;
+  font-size: 11px;
+  line-height: 1.5;
+  border: 1px solid #cccccc;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+
+  h1,
+  h2,
+  h3,
+  p {
+    color: #111111;
+    margin: 0;
+  }
+
+  section {
+    margin-bottom: 10px;
+  }
+}
+
+.pawn-ticket-header {
+  text-align: center;
+  border-bottom: 1px solid #333333;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+
+  p {
+    font-size: 11px;
+    margin: 4px 0;
+  }
+
+  h2 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-top: 6px;
+  }
+}
+
+.pawn-ticket-watermark {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #555555;
+  border: 1px dashed #777777;
+  padding: 5px;
+  margin-bottom: 10px;
+}
+
+.pawn-ticket-loan-info {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-bottom: 1px solid #cccccc;
+  padding-bottom: 8px;
+}
+
+.pawn-ticket-customer {
+  h3 {
+    font-size: 12px;
+    margin-bottom: 5px;
+  }
+
+  p {
+    margin-bottom: 3px;
+    overflow-wrap: anywhere;
+  }
+}
+
+.pawn-ticket-gold-items {
+  h3 {
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 10px;
+    color: #111111;
+    background: #ffffff;
+  }
+
+  th,
+  td {
+    border: 1px solid #777777;
+    padding: 6px 4px;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+
+  th {
+    background: #eeeeee;
+    font-weight: 700;
+  }
+
+  td {
+    background: #ffffff;
+  }
+}
+
+.pawn-ticket-financial {
+  border-top: 1px solid #333333;
+  padding-top: 8px;
+
+  p {
+    margin-top: 6px;
+  }
+}
+
+.pawn-ticket-amount {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+
+  span {
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  strong {
+    font-size: 20px;
+    color: #111111;
+  }
+}
+
+.pawn-ticket-signatures {
+  display: flex;
+  justify-content: space-between;
+  gap: 40px;
+  margin-top: 30px;
+  padding-top: 10px;
+
+  div {
+    width: 42%;
+    border-top: 1px solid #333333;
+    padding-top: 5px;
+    text-align: center;
+  }
+
+  span {
+    font-size: 11px;
+  }
+}
+
+
+
+.pawn-ticket-overlay {
+  .pawn-ticket-paper {
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #111111;
+
+    .pawn-ticket-header {
+      display: block !important;
+      position: static !important;
+      background: #ffffff !important;
+      height: auto !important;
+      min-height: 0 !important;
+      padding: 0 0 10px !important;
+      margin: 0 0 10px !important;
+      box-shadow: none !important;
+      text-align: center;
+
+      h1 {
+        display: block !important;
+        visibility: visible !important;
+        color: #111111 !important;
+        font-size: 22px !important;
+        font-weight: 700;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      h2 {
+        display: block !important;
+        visibility: visible !important;
+        color: #111111 !important;
+        font-size: 15px !important;
+        margin: 5px 0 0 !important;
+        padding: 0 !important;
+      }
+
+      p {
+        color: #333333 !important;
+        font-size: 11px !important;
+        margin: 4px 0 !important;
+      }
+    }
+
+    section {
+      padding: 0 !important;
+      margin: 0 0 10px !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+
+    h3 {
+      color: #111111 !important;
+      font-size: 13px !important;
+      margin: 0 0 6px !important;
+      padding: 0 !important;
+      border: none !important;
+    }
+
+    p {
+      font-size: 12px !important;
+      color: #111111 !important;
+      margin: 4px 0 !important;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+
+      th {
+        background: #eeeeee !important;
+        color: #111111 !important;
+        font-size: 11px !important;
+        padding: 6px 4px !important;
+      }
+
+      td {
+        background: #ffffff !important;
+        color: #111111 !important;
+        font-size: 11px !important;
+        padding: 6px 4px !important;
+      }
+
+      th,
+      td {
+        border: 1px solid #777777 !important;
+        text-align: center !important;
+      }
+    }
+  }
+}
+
+
+
+.pawn-ticket-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .pawn-ticket-print-btn {
+    background: #d4a017;
+    color: #111111;
+    font-weight: 600;
+
+    &:hover:not(:disabled) {
+      background: #b88a12;
+    }
+
+    &:disabled {
+      background: #cccccc;
+      color: #777777;
+      cursor: not-allowed;
+    }
+  }
+}
+
+@media print {
+  html:has(.pawn-ticket-overlay),
+  body:has(.pawn-ticket-overlay) {
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  // Hide the entire application
+  body:has(.pawn-ticket-overlay)
+    > :not(.pawn-ticket-overlay) {
+    display: none !important;
+  }
+
+  .pawn-ticket-overlay {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    overflow: visible !important;
+  }
+
+  .pawn-ticket-modal {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    overflow: visible !important;
+  }
+
+  // Hide preview buttons
+  .pawn-ticket-toolbar {
+    display: none !important;
+  }
+
+  .pawn-ticket-overlay .pawn-ticket-paper {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 138mm !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 5mm !important;
+    box-sizing: border-box !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  // Fix gold items table width
+  .pawn-ticket-overlay
+    .pawn-ticket-gold-items {
+    display: block !important;
+    width: 100% !important;
+
+    table {
+      display: table !important;
+      width: 100% !important;
+      max-width: none !important;
+      table-layout: fixed !important;
+      border-collapse: collapse !important;
+    }
+
+    tr {
+      break-inside: avoid;
+    }
+
+    th,
+    td {
+      display: table-cell !important;
+      text-align: center !important;
+      border: 1px solid #777777 !important;
+    }
+  }
+
+  .pawn-ticket-signatures {
+    break-inside: avoid;
+  }
+}
+
+
+
+// Dynamic shop branding
+.pawn-ticket-overlay {
+  .pawn-ticket-paper {
+    .pawn-ticket-shop-brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 8px;
+    }
+
+    .pawn-ticket-shop-logo {
+      display: block;
+      width: 75px;
+      height: 75px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+
+    .pawn-ticket-shop-details {
+      min-width: 0;
+      text-align: center;
+      overflow-wrap: anywhere;
+    }
+
+    .pawn-ticket-shop-address {
+      white-space: pre-line;
+    }
+
+    .pawn-ticket-customer-grid,
+    .pawn-ticket-financial-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: 15px;
+      row-gap: 2px;
+
+      p {
+        overflow-wrap: anywhere;
+      }
+    }
+
+    .pawn-ticket-customer-address {
+      grid-column: 1 / -1;
+    }
+
+    .pawn-ticket-terms {
+      border-top: 1px solid #cccccc;
+      padding-top: 8px !important;
+
+      p {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        font-size: 10px !important;
+        line-height: 1.4;
+      }
+    }
+
+    .pawn-ticket-signatures {
+      div {
+        overflow-wrap: anywhere;
+      }
+    }
+  }
+}
+
+// Preview messages
+.pawn-ticket-message,
+.pawn-ticket-error {
+  padding: 14px 16px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.pawn-ticket-message {
+  background: #fff8e6;
+  border: 1px solid #d4a017;
+  color: #805b00;
+}
+
+.pawn-ticket-error {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+}
+
+.pawn-ticket-toolbar {
+  flex-wrap: wrap;
+
+  button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.pawn-ticket-toolbar-actions {
+  flex-wrap: wrap;
+}
+
+// Print styling
+@media print {
+  .pawn-ticket-message,
+  .pawn-ticket-error {
+    display: none !important;
+  }
+
+  .pawn-ticket-overlay {
+    .pawn-ticket-paper {
+      .pawn-ticket-shop-brand {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 4mm !important;
+        break-inside: avoid;
+      }
+
+      .pawn-ticket-shop-logo {
+        width: 18mm !important;
+        height: 18mm !important;
+        object-fit: contain !important;
+      }
+
+      .pawn-ticket-shop-details {
+        text-align: center !important;
+      }
+
+      .pawn-ticket-header {
+        break-inside: avoid;
+      }
+
+      .pawn-ticket-customer-grid,
+      .pawn-ticket-financial-grid {
+        display: grid !important;
+        grid-template-columns: repeat(
+          2,
+          minmax(0, 1fr)
+        ) !important;
+      }
+
+      .pawn-ticket-terms {
+        p {
+          font-size: 9px !important;
+        }
+      }
+    }
+  }
+
+  // Prevent printing an incomplete or inactive ticket
+  .pawn-ticket-overlay.pawn-ticket-print-blocked {
+    display: none !important;
+  }
+}
+
+
+
+// Advanced Pawn Ticket Customization
+
+.pawn-ticket-overlay {
+  .pawn-ticket-paper {
+
+    // Logo position
+    .pawn-ticket-shop-brand {
+
+      &.logo-position-left {
+        flex-direction: row;
+      }
+
+      &.logo-position-top {
+        flex-direction: column;
+      }
+
+      &.logo-position-right {
+        flex-direction: row-reverse;
+      }
+    }
+
+    // Logo sizes
+    .pawn-ticket-shop-logo {
+
+      &.logo-size-small {
+        width: 50px;
+        height: 50px;
+      }
+
+      &.logo-size-medium {
+        width: 75px;
+        height: 75px;
+      }
+
+      &.logo-size-large {
+        width: 100px;
+        height: 100px;
+      }
+    }
+
+    // Signature alignment
+    .pawn-ticket-signatures {
+
+      &.signature-both {
+        justify-content: space-between;
+      }
+
+      &.signature-customer-only {
+        justify-content: flex-start;
+      }
+
+      &.signature-authorized-only {
+        justify-content: flex-end;
+      }
+
+      div {
+        width: 42%;
+        overflow-wrap: anywhere;
+      }
+    }
+  }
+}
+
+// Advanced print customization
+
+@media print {
+  .pawn-ticket-overlay {
+    .pawn-ticket-paper {
+
+      .pawn-ticket-shop-brand {
+
+        &.logo-position-left {
+          flex-direction: row !important;
+        }
+
+        &.logo-position-top {
+          flex-direction: column !important;
+        }
+
+        &.logo-position-right {
+          flex-direction: row-reverse !important;
+        }
+      }
+
+      .pawn-ticket-shop-logo {
+
+        &.logo-size-small {
+          width: 12mm !important;
+          height: 12mm !important;
+        }
+
+        &.logo-size-medium {
+          width: 18mm !important;
+          height: 18mm !important;
+        }
+
+        &.logo-size-large {
+          width: 25mm !important;
+          height: 25mm !important;
+        }
+      }
+
+      .pawn-ticket-signatures {
+        break-inside: avoid;
+
+        &.signature-both {
+          justify-content: space-between !important;
+        }
+
+        &.signature-customer-only {
+          justify-content: flex-start !important;
+        }
+
+        &.signature-authorized-only {
+          justify-content: flex-end !important;
+        }
+      }
+    }
+  }
+}
+
+
+
+// ==========================================
+// Phase 28.8 - Dynamic Printing Integration
+// ==========================================
+
+.pawn-ticket-print-summary {
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  border: 1px solid #d4a017;
+  border-radius: 8px;
+  background: #fff8e6;
+
+  strong {
+    display: block;
+    margin-bottom: 10px;
+    color: #800020;
+    font-size: 14px;
+  }
+}
+
+.pawn-ticket-print-summary-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  span {
+    padding: 5px 10px;
+    border: 1px solid #e8d8aa;
+    border-radius: 5px;
+    background: #ffffff;
+    color: #333333;
+    font-size: 12px;
+  }
+}
+
+.pawn-ticket-pages {
+  width: max-content;
+  min-width: 100%;
+}
+
+.pawn-ticket-overlay {
+
+  .pawn-ticket-modal {
+    width: 1200px;
+    max-width: 100%;
+  }
+
+  .pawn-ticket-sheet {
+    position: relative;
+    width: var(--pt-paper-width);
+    height: var(--pt-paper-height);
+    margin: 0 auto 20px;
+    padding: 0;
+    box-sizing: border-box;
+    background: #ffffff;
+    outline: 1px solid #cccccc;
+    box-shadow: 0 2px 12px
+      rgba(0, 0, 0, 0.12);
+  }
+
+  .pawn-ticket-extra-copy {
+    display: none;
+  }
+
+  .pawn-ticket-sheet .pawn-ticket-paper {
+    position: absolute;
+    top: var(--pt-ticket-top);
+    left: var(--pt-margin);
+
+    width: var(--pt-ticket-width);
+    min-height: 0;
+    height: auto;
+
+    margin: 0;
+    padding: 0;
+
+    border: none;
+    box-shadow: none;
+
+    box-sizing: border-box;
+    background: #ffffff;
+
+    font-family: Arial, sans-serif;
+    font-size: var(--pt-font-size) !important;
+    line-height: 1.35;
+
+    overflow: visible;
+    overflow-wrap: anywhere;
+
+    .pawn-ticket-header {
+      padding: 0 0 2mm !important;
+      margin: 0 0 2mm !important;
+
+      h1 {
+        font-size: 1.6em !important;
+        letter-spacing: 0.4px;
+      }
+
+      h2 {
+        font-size: 1.2em !important;
+      }
+
+      p {
+        font-size: 1em !important;
+        margin: 0.7mm 0 !important;
+      }
+    }
+
+    section {
+      margin: 0 0 2mm !important;
+    }
+
+    h3 {
+      font-size: 1.1em !important;
+      margin: 0 0 1mm !important;
+    }
+
+    p {
+      font-size: 1em !important;
+      margin: 0.7mm 0 !important;
+    }
+
+    .pawn-ticket-shop-brand {
+      gap: 3mm !important;
+      margin-bottom: 1.5mm;
+    }
+
+    .pawn-ticket-shop-logo {
+
+      &.logo-size-small {
+        width: 12mm !important;
+        height: 12mm !important;
+      }
+
+      &.logo-size-medium {
+        width: 18mm !important;
+        height: 18mm !important;
+      }
+
+      &.logo-size-large {
+        width: 25mm !important;
+        height: 25mm !important;
+      }
+    }
+
+    .pawn-ticket-loan-info {
+      gap: 2mm;
+      padding-bottom: 1.5mm !important;
+    }
+
+    .pawn-ticket-customer-grid,
+    .pawn-ticket-financial-grid {
+      column-gap: 3mm;
+      row-gap: 0.5mm;
+    }
+
+    .pawn-ticket-gold-items {
+      table {
+        font-size: 0.95em !important;
+      }
+
+      th,
+      td {
+        font-size: inherit !important;
+        padding: 1.2mm 0.8mm !important;
+      }
+    }
+
+    .pawn-ticket-amount {
+
+      span {
+        font-size: 1.1em !important;
+      }
+
+      strong {
+        font-size: 1.5em !important;
+      }
+    }
+
+    .pawn-ticket-terms {
+      padding-top: 2mm !important;
+
+      p {
+        font-size: 0.95em !important;
+        line-height: 1.35;
+      }
+    }
+
+    .pawn-ticket-signatures {
+      margin-top: 7mm;
+      padding-top: 2mm;
+      gap: 5mm;
+
+      span {
+        font-size: 1em !important;
+      }
+    }
+  }
+
+  .pawn-ticket-cutting-line {
+    position: absolute;
+    top: 50%;
+    left: var(--pt-margin);
+    right: var(--pt-margin);
+    border-top: 1px dashed #777777;
+    pointer-events: none;
+  }
+}
+
+// Actual printer output
+@media print {
+
+  .pawn-ticket-print-summary {
+    display: none !important;
+  }
+
+  .pawn-ticket-pages {
+    display: block !important;
+    width: auto !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .pawn-ticket-overlay {
+
+    .pawn-ticket-sheet {
+      display: block !important;
+      position: relative !important;
+
+      width: var(--pt-paper-width) !important;
+      height: var(--pt-paper-height) !important;
+
+      margin: 0 !important;
+      padding: 0 !important;
+
+      outline: none !important;
+      border: none !important;
+      box-shadow: none !important;
+
+      break-inside: avoid;
+      break-after: page;
+      page-break-after: always;
+    }
+
+    .pawn-ticket-sheet:last-child {
+      break-after: auto;
+      page-break-after: auto;
+    }
+
+    .pawn-ticket-sheet .pawn-ticket-paper {
+      position: absolute !important;
+
+      top: var(--pt-ticket-top) !important;
+      left: var(--pt-margin) !important;
+
+      width: var(--pt-ticket-width) !important;
+      min-height: 0 !important;
+      height: auto !important;
+
+      margin: 0 !important;
+      padding: 0 !important;
+
+      border: none !important;
+      box-shadow: none !important;
+
+      overflow: visible !important;
+
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+
+    .pawn-ticket-cutting-line {
+      display: block !important;
+    }
+
+    &.pawn-ticket-print-blocked {
+      display: none !important;
+    }
+  }
+}
+
+// ==========================================
+// Compact Pawn Ticket Layout
+// ==========================================
+
+.pawn-ticket-overlay {
+  .pawn-ticket-sheet .pawn-ticket-paper {
+
+    // Remove unnecessary bottom spacing
+    padding-bottom: 0 !important;
+
+    > :last-child {
+      margin-bottom: 0 !important;
+    }
+
+    // Compact header
+    .pawn-ticket-header {
+      padding-bottom: 1.5mm !important;
+      margin-bottom: 1.5mm !important;
+    }
+
+    // Optimize top logo spacing
+    .pawn-ticket-shop-brand.logo-position-top {
+      gap: 1mm !important;
+      margin-bottom: 1mm !important;
+    }
+
+    // Remove default shop details spacing
+    .pawn-ticket-shop-details {
+      padding: 0 !important;
+      margin: 0 !important;
+
+      p {
+        margin: 0.3mm 0 !important;
+      }
+    }
+
+    // Compact section spacing
+    section {
+      margin-bottom: 1.5mm !important;
+    }
+
+    // Compact customer and financial grids
+    .pawn-ticket-customer-grid,
+    .pawn-ticket-financial-grid {
+      row-gap: 0 !important;
+
+      p {
+        margin: 0.4mm 0 !important;
+      }
+    }
+
+    // Compact table spacing
+    .pawn-ticket-gold-items {
+      th,
+      td {
+        padding: 0.8mm 0.6mm !important;
+      }
+    }
+
+    // Signature spacing when enabled
+    .pawn-ticket-signatures {
+      margin-top: 5mm !important;
+      padding-top: 1mm !important;
+      margin-bottom: 0 !important;
+    }
+
+    // Defensive protection against empty footer
+    .pawn-ticket-signatures:empty {
+      display: none !important;
+      height: 0 !important;
+      min-height: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+    }
+  }
+}

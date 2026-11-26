@@ -2,13 +2,21 @@
 import express from "express";
 import { rateLimit } from "express-rate-limit";
 
+
 import {
   loginUser,
   getCurrentUser,
   logoutUser,
+  getSessionStatus,
 } from "../controllers/authController.js";
 
-import { protect } from "../middleware/authMiddleware.js";
+
+
+import {
+  protect,
+  optionalAuth,
+} from "../middleware/authMiddleware.js";
+
 
 const router = express.Router();
 
@@ -35,5 +43,8 @@ router.post("/login", loginLimiter, loginUser);
 router.get("/me", protect, getCurrentUser);
 
 router.post("/logout", protect, logoutUser);
+
+router.get("/session", optionalAuth, getSessionStatus);
+
 
 export default router;

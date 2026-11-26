@@ -74,3 +74,47 @@ export const authorize = (...roles) => {
     next();
   };
 };
+
+
+export const optionalAuth = async (req, res, next) => {
+  try {
+    const token = req.cookies?.sigiri_auth;
+
+    if (!token) {
+      return next();
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
+
+    if (!decoded.userId || !decoded.sessionId) {
+      return next();
+    }
+
+    const session = await Session.findOne({
+      sessionId: decoded.sessionId,
+      userId: decoded.userId,
+      revokedAt: null,
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (!session) {
+      return next();
+    }
+
+    const user = await User.findById(decoded.userId);
+
+    if (!user || !user.isActive) {
+      return next();
+    }
+
+    req.user = user;
+    req.sessionId = decoded.sessionId;
+
+    return next();
+  } catch (error) {
+    return next();
+  }
+};
+

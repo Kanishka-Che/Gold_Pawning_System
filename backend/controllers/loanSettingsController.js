@@ -5,12 +5,15 @@ import { createAuditLog } from "../utils/auditLogger.js";
 
 // Allowed settings and their supported values
 const allowedFields = {
-  interest: [
-    "rate",
-    "calculationMethod",
-    "minimumInterestDays",
-    "chargeFullFirstMonth",
-  ],
+  
+interest: [
+  "rate",
+  "calculationMethod",
+  "principalCalculationMethod",
+  "minimumInterestDays",
+  "chargeFullFirstMonth",
+],
+
   loan: ["defaultDurationMonths", "maximumLoanAmount"],
   partialPayment: [
   "enabled",
@@ -32,13 +35,24 @@ const allowedFields = {
   ],
 };
 
+
 const enumValues = {
-  "interest.calculationMethod": ["monthly", "daily"],
+  "interest.calculationMethod": [
+    "monthly",
+    "daily",
+  ],
+
+  "interest.principalCalculationMethod": [
+    "original_principal",
+    "remaining_principal",
+  ],
+
   "partialPayment.allocationMethod": [
     "interest_first",
     "principal_first",
   ],
 };
+
 
 
 const booleanFields = new Set([
@@ -170,12 +184,29 @@ export const getLoanSettings = async (req, res) => {
 };
 
 // PUT /api/loan-settings
+
 export const updateLoanSettings = async (req, res) => {
   let updates;
+  let expectedVersion;
 
   try {
-    updates = validateUpdates(req.body);
+    const { expectedVersion: requestedVersion, ...settingsBody } =
+      req.body ?? {};
+
+    if (
+      !Number.isSafeInteger(requestedVersion) ||
+      requestedVersion < 1
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "A valid expectedVersion is required",
+      });
+    }
+
+    expectedVersion = requestedVersion;
+    updates = validateUpdates(settingsBody);
   } catch (error) {
+
     return res.status(400).json({
       success: false,
       message: error.message,
@@ -204,6 +235,17 @@ export const updateLoanSettings = async (req, res) => {
       }
 
       const previousVersion = currentSettings.version;
+
+
+if (previousVersion !== expectedVersion) {
+  const error = new Error(
+    "Settings have changed. Reload before saving."
+  );
+
+  error.statusCode = 409;
+  throw error;
+}
+
 
       const changes = {};
       const actualUpdates = {};
