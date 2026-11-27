@@ -12,6 +12,11 @@ import auditLogRoutes from "./routes/auditLogRoutes.js";
 import goldItemRoutes from "./routes/goldItemRoutes.js";
 import pawnLoanRoutes from "./routes/pawnLoanRoutes.js";
 import pawnPaymentRoutes from "./routes/pawnPaymentRoutes.js";
+import pawnRenewalRoutes from "./routes/pawnRenewalRoutes.js";
+import pawnRedemptionRoutes from "./routes/pawnRedemptionRoutes.js";
+import pawnOverdueRoutes from "./routes/pawnOverdueRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
+import reportsRoutes from "./routes/reportsRoutes.js";
 
 const app = express();
 
@@ -71,5 +76,13 @@ app.use("/api/audit-logs", auditLogRoutes);
 app.use("/api/gold-items", goldItemRoutes);
 app.use("/api/pawn-loans", pawnLoanRoutes);
 app.use("/api/pawn-payments", pawnPaymentRoutes);
+app.use("/api/pawn-renewals", pawnRenewalRoutes);
+app.use(
+  "/api/pawn-redemptions",
+  pawnRedemptionRoutes
+);
+app.use("/api/pawn-overdue", pawnOverdueRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/reports", reportsRoutes);
 
 export default app;

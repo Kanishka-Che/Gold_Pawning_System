@@ -7,6 +7,11 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { apiFetch } from "../../../utils/api.js";
+import {
+  getPrintConfiguration,
+  isPrintContentOverflowing,
+} from "../../../utils/printConfiguration.js";
+
 import "./PawnTicketPreview.scss";
 
 const formatAmount = (value) => {
@@ -37,97 +42,97 @@ const formatDate = (value) =>
       })
     : "—";
 
-const getPrintConfiguration = (settings) => {
-  const printing = settings?.printing ?? {};
+// const getPrintConfiguration = (settings) => {
+//   const printing = settings?.printing ?? {};
 
-  const paperSize =
-    printing.paperSize === "A5" ? "A5" : "A4";
+//   const paperSize =
+//     printing.paperSize === "A5" ? "A5" : "A4";
 
-  const orientation =
-    printing.orientation === "landscape"
-      ? "landscape"
-      : "portrait";
+//   const orientation =
+//     printing.orientation === "landscape"
+//       ? "landscape"
+//       : "portrait";
 
-  const layout =
-    paperSize === "A4" &&
-    printing.layout !== "full_page"
-      ? "half_page"
-      : "full_page";
+//   const layout =
+//     paperSize === "A4" &&
+//     printing.layout !== "full_page"
+//       ? "half_page"
+//       : "full_page";
 
-  const isHalfPage = layout === "half_page";
+//   const isHalfPage = layout === "half_page";
 
-  const ticketPosition =
-    isHalfPage &&
-    printing.ticketPosition === "bottom"
-      ? "bottom"
-      : "top";
+//   const ticketPosition =
+//     isHalfPage &&
+//     printing.ticketPosition === "bottom"
+//       ? "bottom"
+//       : "top";
 
-  const marginMm =
-    Number.isInteger(printing.marginMm) &&
-    printing.marginMm >= 5 &&
-    printing.marginMm <= 15
-      ? printing.marginMm
-      : 5;
+//   const marginMm =
+//     Number.isInteger(printing.marginMm) &&
+//     printing.marginMm >= 5 &&
+//     printing.marginMm <= 15
+//       ? printing.marginMm
+//       : 5;
 
-  const fontSizePt =
-    Number.isInteger(printing.fontSizePt) &&
-    printing.fontSizePt >= 9 &&
-    printing.fontSizePt <= 14
-      ? printing.fontSizePt
-      : 9;
+//   const fontSizePt =
+//     Number.isInteger(printing.fontSizePt) &&
+//     printing.fontSizePt >= 9 &&
+//     printing.fontSizePt <= 14
+//       ? printing.fontSizePt
+//       : 9;
 
-  const copies =
-    Number.isInteger(printing.copies) &&
-    printing.copies >= 1 &&
-    printing.copies <= 3
-      ? printing.copies
-      : 1;
+//   const copies =
+//     Number.isInteger(printing.copies) &&
+//     printing.copies >= 1 &&
+//     printing.copies <= 3
+//       ? printing.copies
+//       : 1;
 
-  const showCuttingLine =
-    isHalfPage &&
-    printing.showCuttingLine === true;
+//   const showCuttingLine =
+//     isHalfPage &&
+//     printing.showCuttingLine === true;
 
-  const baseWidth = paperSize === "A4" ? 210 : 148;
-  const baseHeight = paperSize === "A4" ? 297 : 210;
+//   const baseWidth = paperSize === "A4" ? 210 : 148;
+//   const baseHeight = paperSize === "A4" ? 297 : 210;
 
-  const paperWidth =
-    orientation === "portrait"
-      ? baseWidth
-      : baseHeight;
+//   const paperWidth =
+//     orientation === "portrait"
+//       ? baseWidth
+//       : baseHeight;
 
-  const paperHeight =
-    orientation === "portrait"
-      ? baseHeight
-      : baseWidth;
+//   const paperHeight =
+//     orientation === "portrait"
+//       ? baseHeight
+//       : baseWidth;
 
-  const ticketWidth =
-    paperWidth - marginMm * 2;
+//   const ticketWidth =
+//     paperWidth - marginMm * 2;
 
-  const ticketHeight =
-    (isHalfPage ? paperHeight / 2 : paperHeight) -
-    marginMm * 2;
+//   const ticketHeight =
+//     (isHalfPage ? paperHeight / 2 : paperHeight) -
+//     marginMm * 2;
 
-  const ticketTop =
-    isHalfPage && ticketPosition === "bottom"
-      ? paperHeight / 2 + marginMm
-      : marginMm;
+//   const ticketTop =
+//     isHalfPage && ticketPosition === "bottom"
+//       ? paperHeight / 2 + marginMm
+//       : marginMm;
 
-  return {
-    paperSize,
-    orientation,
-    layout,
-    ticketPosition,
-    marginMm,
-    fontSizePt,
-    copies,
-    showCuttingLine,
-    paperWidth,
-    paperHeight,
-    ticketWidth,
-    ticketHeight,
-    ticketTop,
-  };
-};
+//   return {
+//     paperSize,
+//     orientation,
+//     layout,
+//     ticketPosition,
+//     marginMm,
+//     fontSizePt,
+//     copies,
+//     showCuttingLine,
+//     paperWidth,
+//     paperHeight,
+//     ticketWidth,
+//     ticketHeight,
+//     ticketTop,
+//   };
+// };
 
 
 export default function PawnTicketPreview({
@@ -407,20 +412,11 @@ const logoSize =
 const handlePrint = () => {
   if (!canPrint) return;
 
-  const content = ticketContentRef.current;
-
-  if (!content) return;
-
-  const maxHeight =
-    printConfig.ticketHeight * (96 / 25.4);
-
-  const maxWidth =
-    printConfig.ticketWidth * (96 / 25.4);
-
   if (
-    content.getBoundingClientRect().height >
-      maxHeight ||
-    content.scrollWidth > maxWidth + 1
+    isPrintContentOverflowing(
+      ticketContentRef.current,
+      printConfig
+    )
   ) {
     setContentOverflow(true);
     return;

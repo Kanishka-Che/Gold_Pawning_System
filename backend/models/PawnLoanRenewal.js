@@ -148,6 +148,12 @@ pawnLoanRenewalSchema.index({
   _id: -1,
 });
 
+// Global renewal history and date filtering
+pawnLoanRenewalSchema.index({
+  renewedAt: -1,
+  _id: -1,
+});
+
 const PawnLoanRenewal = mongoose.model(
   "PawnLoanRenewal",
   pawnLoanRenewalSchema

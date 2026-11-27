@@ -3,12 +3,22 @@ import mongoose from "mongoose";
 
 const { Schema } = mongoose;
 
-const isValidMoney = (value) =>
-  typeof value === "number" &&
-  Number.isFinite(value) &&
-  value >= 0 &&
-  Math.abs(value * 100 - Math.round(value * 100)) <
-    1e-7;
+const isValidMoney = (value) => {
+  if (
+    typeof value !== "number" ||
+    !Number.isFinite(value) ||
+    value < 0
+  ) {
+    return false;
+  }
+
+  const cents = Math.round(value * 100);
+
+  return (
+    Number.isSafeInteger(cents) &&
+    Math.abs(value - cents / 100) <= 1e-8
+  );
+};
 
 const pawnLoanRedemptionSchema = new Schema(
   {
@@ -136,6 +146,11 @@ pawnLoanRedemptionSchema.index(
   { unique: true }
 );
 
+pawnLoanRedemptionSchema.index({
+  redeemedAt: -1,
+  _id: -1,
+});
+
 // Validate settlement consistency.
 pawnLoanRedemptionSchema.pre("validate", function () {
   const amounts = [
@@ -150,12 +165,25 @@ pawnLoanRedemptionSchema.pre("validate", function () {
   }
 
   const expectedTotalCents =
-    Math.round(this.principalSettled * 100) +
-    Math.round(this.interestSettled * 100) +
-    Math.round(this.penaltySettled * 100);
+    BigInt(Math.round(this.principalSettled * 100)) +
+    BigInt(Math.round(this.interestSettled * 100)) +
+    BigInt(Math.round(this.penaltySettled * 100));
 
-  const actualTotalCents =
-    Math.round(this.totalSettled * 100);
+  const actualTotalCents = BigInt(
+    Math.round(this.totalSettled * 100)
+  );
+
+  if (
+    expectedTotalCents >
+    BigInt(Number.MAX_SAFE_INTEGER)
+  ) {
+    this.invalidate(
+      "totalSettled",
+      "Total settlement exceeds safe monetary range"
+    );
+
+    return;
+  }
 
   if (expectedTotalCents !== actualTotalCents) {
     this.invalidate(

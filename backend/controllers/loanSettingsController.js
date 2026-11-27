@@ -28,6 +28,16 @@ interest: [
     "requireInterestSettlement",
     "renewalFee",
   ],
+
+  redemption: [
+  "enabled",
+  "allowEarlyRedemption",
+  "allowOverdueRedemption",
+  "includeOverduePenalties",
+  "requireCustomerVerification",
+  "requireAdminApproval",
+],
+
   overdue: [
     "gracePeriodDays",
     "penaltyEnabled",
@@ -66,6 +76,13 @@ const booleanFields = new Set([
   "renewal.requireInterestSettlement",
 
   "overdue.penaltyEnabled",
+
+  "redemption.enabled",
+"redemption.allowEarlyRedemption",
+"redemption.allowOverdueRedemption",
+"redemption.includeOverduePenalties",
+"redemption.requireCustomerVerification",
+"redemption.requireAdminApproval",
 ]);
 
 
@@ -139,16 +156,70 @@ function validateUpdates(body) {
         }
 
         if (
-          integerFields.has(path) &&
-          !Number.isInteger(value)
-        ) {
-          throw new Error(`${path} must be an integer`);
-        }
+  integerFields.has(path) &&
+  !Number.isSafeInteger(value)
+) {
+  throw new Error(
+    `${path} must be a safe integer`
+  );
+}
 
         if (positiveFields.has(path) && value < 1) {
           throw new Error(`${path} must be at least 1`);
         }
       }
+
+      // Renewal duration safety validation
+if (path === "renewal.durationMonths") {
+  if (
+    !Number.isSafeInteger(value) ||
+    value < 1 ||
+    value > 120
+  ) {
+    throw new Error(
+      "Renewal duration must be between 1 and 120 months"
+    );
+  }
+}
+
+// Renewal fee monetary validation
+if (path === "renewal.renewalFee") {
+  const cents = Math.round(value * 100);
+
+  if (
+    !Number.isSafeInteger(cents) ||
+    Math.abs(value - cents / 100) > 1e-8
+  ) {
+    throw new Error(
+      "Renewal fee must be a valid amount with at most two decimal places"
+    );
+  }
+}
+
+// Overdue grace period safety validation
+if (path === "overdue.gracePeriodDays") {
+  if (
+    !Number.isSafeInteger(value) ||
+    value < 0
+  ) {
+    throw new Error(
+      "Grace period must be a non-negative whole number"
+    );
+  }
+}
+
+// Overdue penalty rate validation
+if (path === "overdue.penaltyRate") {
+  if (
+    typeof value !== "number" ||
+    !Number.isFinite(value) ||
+    value < 0
+  ) {
+    throw new Error(
+      "Penalty rate must be a valid non-negative number"
+    );
+  }
+}
 
       updates[path] = value;
     }

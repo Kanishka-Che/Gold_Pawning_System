@@ -1,6 +1,9 @@
-
 import { useEffect, useState } from "react";
 import { apiFetch } from "../../../utils/api.js";
+import PartialPaymentSettings from "./PartialPaymentSettings.jsx";
+import RenewalSettings from "./RenewalSettings.jsx";
+import RedemptionSettings from "./RedemptionSettings.jsx";
+import OverdueSettings from "./OverdueSettings.jsx";
 import "./LoanSettings.scss";
 
 const getInterestForm = (settings) => ({
@@ -24,6 +27,13 @@ export default function LoanSettings() {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 const [success, setSuccess] = useState("");
+const [partialEditing, setPartialEditing] = useState(false);
+const [renewalEditing, setRenewalEditing] =
+  useState(false);
+  const [redemptionEditing, setRedemptionEditing] =
+  useState(false);
+  const [overdueEditing, setOverdueEditing] =
+  useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -318,16 +328,23 @@ const handleSave = async () => {
 
         <div className="loan-settings-actions">
           {!editing ? (
-            <button
-              type="button"
-              onClick={() => {
-  setError("");
-  setSuccess("");
-  setEditing(true);
-}}
-            >
-              Edit Settings
-            </button>
+           <button
+  type="button"
+ disabled={
+  partialEditing ||
+  renewalEditing ||
+  redemptionEditing ||
+  overdueEditing ||
+  saving
+}
+  onClick={() => {
+    setError("");
+    setSuccess("");
+    setEditing(true);
+  }}
+>
+  Edit Settings
+</button>
           ) : (
             <>
               <button
@@ -339,11 +356,12 @@ const handleSave = async () => {
 </button>
 
               <button
-                type="button"
-                onClick={handleCancel}
-              >
-                Cancel
-              </button>
+  type="button"
+  onClick={handleCancel}
+  disabled={saving}
+>
+  Cancel
+</button>
             </>
           )}
         </div>
@@ -360,13 +378,83 @@ const handleSave = async () => {
   </p>
 )}
 
-<div className="loan-settings-warning">
-  Only Original Principal with 0 minimum interest days
-  and no full first-month charge is currently enabled
-  for saving. Other financial rules require further
-  calculation support.
-</div>
+        <div className="loan-settings-warning">
+          Only Original Principal with 0 minimum interest days
+          and no full first-month charge is currently enabled
+          for saving. Other financial rules require further
+          calculation support.
+        </div>
+
       </div>
+
+     <PartialPaymentSettings
+  settings={settings}
+  editing={partialEditing}
+  onEditingChange={setPartialEditing}
+  disabled={
+  editing ||
+  renewalEditing ||
+  redemptionEditing ||
+  overdueEditing ||
+  saving
+}
+  onSettingsUpdated={(updatedSettings) => {
+    setSettings(updatedSettings);
+    setForm(getInterestForm(updatedSettings));
+  }}
+/>
+
+<RenewalSettings
+  settings={settings}
+  editing={renewalEditing}
+  onEditingChange={setRenewalEditing}
+  disabled={
+  editing ||
+  partialEditing ||
+  redemptionEditing ||
+  overdueEditing ||
+  saving
+}
+  onSettingsUpdated={(updatedSettings) => {
+    setSettings(updatedSettings);
+    setForm(getInterestForm(updatedSettings));
+  }}
+/>
+
+<RedemptionSettings
+  settings={settings}
+  editing={redemptionEditing}
+  onEditingChange={setRedemptionEditing}
+  disabled={
+  editing ||
+  partialEditing ||
+  renewalEditing ||
+  overdueEditing ||
+  saving
+}
+  onSettingsUpdated={(updatedSettings) => {
+    setSettings(updatedSettings);
+    setForm(getInterestForm(updatedSettings));
+  }}
+/>
+
+<OverdueSettings
+  settings={settings}
+  editing={overdueEditing}
+  onEditingChange={setOverdueEditing}
+  disabled={
+    editing ||
+    partialEditing ||
+    renewalEditing ||
+    redemptionEditing ||
+    saving
+  }
+  onSettingsUpdated={(updatedSettings) => {
+    setSettings(updatedSettings);
+    setForm(getInterestForm(updatedSettings));
+  }}
+/>
+
     </div>
   );
 }

@@ -193,7 +193,8 @@ const handlePawnLoanCreated = (loan) => {
 >
   <input
     type="text"
-    placeholder="Search Loan Number or Customer NIC"
+    placeholder="Search Loan No, NIC, Customer Name or Code"
+    aria-label="Search pawn loans"
     value={searchInput}
     onChange={(e) => setSearchInput(e.target.value)}
     maxLength={100}

@@ -159,6 +159,20 @@ partialPayment: {
         renewalFee: Number,
       },
 
+      redemption: {
+  enabled: Boolean,
+
+  allowEarlyRedemption: Boolean,
+
+  allowOverdueRedemption: Boolean,
+
+  includeOverduePenalties: Boolean,
+
+  requireCustomerVerification: Boolean,
+
+  requireAdminApproval: Boolean,
+},
+
       overdue: {
         gracePeriodDays: Number,
         penaltyEnabled: Boolean,

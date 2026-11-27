@@ -1,0 +1,79 @@
+.redemption-receipt-dialog {
+  .rr-gold-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+
+    margin: 1mm 0 2mm;
+
+    color: #111111;
+    background: #ffffff;
+
+    font-size: 0.9em;
+
+    th,
+    td {
+      padding: 1mm;
+
+      border: 1px solid #bcbcbc;
+
+      color: #111111;
+      background: #ffffff;
+
+      text-align: left;
+      vertical-align: top;
+
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    th {
+      background: #eeeeee;
+      font-weight: 700;
+    }
+
+    th:nth-child(1) {
+      width: 28%;
+    }
+
+    th:nth-child(2) {
+      width: 32%;
+    }
+
+    th:nth-child(3) {
+      width: 15%;
+    }
+
+    th:nth-child(4) {
+      width: 25%;
+    }
+
+    td:last-child,
+    th:last-child {
+      text-align: right;
+    }
+  }
+}
+
+@media print {
+  .redemption-receipt-dialog[open] {
+    .rr-gold-table {
+      width: 100% !important;
+
+      border-collapse: collapse;
+
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+
+      tr {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      th,
+      td {
+        color: #000000 !important;
+      }
+    }
+  }
+}
