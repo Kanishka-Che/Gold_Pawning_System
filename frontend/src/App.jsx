@@ -5,9 +5,15 @@ import Header from "../components/Header/Header.jsx";
 import Dashboard from "./pages/Dashboard/Dashboard.jsx";
 import Customers from "./pages/Customers/Customers.jsx";
 import PawnLoans from "./pages/PawnLoans/PawnLoans.jsx";
+import Payments from "./pages/Payments/Payments.jsx";
+import Renewals from "./pages/Renewals/Renewals.jsx";
 import Login from "./pages/Login/Login.jsx";
 import { apiFetch } from "../utils/api.js";
 import SystemSettings from "./pages/Settings/SystemSettings.jsx";
+import Redemptions from
+  "./pages/Redemptions/Redemptions.jsx";
+  import Overdue from "./pages/Overdue/Overdue.jsx";
+  import Reports from "./pages/Reports/Reports.jsx";
 import "./App.scss";
 
 function App() {
@@ -126,7 +132,18 @@ const checkAuthentication = async () => {
   <Customers />
 ) : activePage === "Pawn Loans" ? (
   <PawnLoans />
-) : activePage === "System Settings" && auth.user?.role === "admin" ? (
+) : activePage === "Payments" ? (
+  <Payments />
+) : activePage === "Renewals" ? (
+  <Renewals />
+) :activePage === "Redemptions" ? (
+  <Redemptions />
+) :activePage === "Overdue" ? (
+ <Overdue />
+) : activePage === "Reports" ? (
+  <Reports />
+) : activePage === "System Settings" &&
+  auth.user?.role === "admin" ? (
   <SystemSettings />
 ) : (
   <div className="coming-soon">

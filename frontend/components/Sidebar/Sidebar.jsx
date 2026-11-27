@@ -9,6 +9,8 @@ import {
   Settings,
   LogOut,
   ChevronLeft,
+  HandCoins,
+  CalendarClock,
 } from "lucide-react";
 import "./Sidebar.scss";
 
@@ -20,6 +22,8 @@ const menuItems = [
   { label: "Payments", icon: Wallet },
   { label: "Renewals", icon: RefreshCw },
   { label: "Reports", icon: FileText },
+  { label: "Redemptions", icon: HandCoins },
+  { label: "Overdue", icon: CalendarClock },
   {
     label: "System Settings",
     icon: Settings,

@@ -115,23 +115,68 @@ principalCalculationMethod: {
       },
     },
 
-    // Overdue Settings
-    overdue: {
-      gracePeriodDays: {
-        type: Number,
-        default: 0,
-        min: 0,
-      },
-      penaltyEnabled: {
-        type: Boolean,
-        default: false,
-      },
-      penaltyRate: {
-        type: Number,
-        default: 0,
-        min: 0,
-      },
+    // Redemption Settings
+redemption: {
+  enabled: {
+    type: Boolean,
+    default: false,
+  },
+
+  allowEarlyRedemption: {
+    type: Boolean,
+    default: false,
+  },
+
+  allowOverdueRedemption: {
+    type: Boolean,
+    default: false,
+  },
+
+  includeOverduePenalties: {
+    type: Boolean,
+    default: false,
+  },
+
+  requireCustomerVerification: {
+    type: Boolean,
+    default: true,
+  },
+
+  requireAdminApproval: {
+    type: Boolean,
+    default: true,
+  },
+},
+
+   // Overdue Settings
+overdue: {
+  gracePeriodDays: {
+    type: Number,
+    default: 0,
+    min: 0,
+    validate: {
+      validator: Number.isSafeInteger,
+      message:
+        "Grace period must be a valid whole number",
     },
+  },
+
+  penaltyEnabled: {
+    type: Boolean,
+    default: false,
+  },
+
+  penaltyRate: {
+    type: Number,
+    default: 0,
+    min: 0,
+    validate: {
+      validator: Number.isFinite,
+      message:
+        "Penalty rate must be a finite number",
+    },
+  },
+},
 
     // Settings revision for future audit/history
     version: {

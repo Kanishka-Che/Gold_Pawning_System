@@ -1,0 +1,255 @@
+
+.payment-details-dialog {
+  --pd-red: #a31324;
+  --pd-dark-red: #790b18;
+  --pd-gold: #e9b936;
+  --pd-border: #e9e2d8;
+
+  width: min(850px, calc(100% - 32px));
+  max-height: 90vh;
+  margin: auto;
+  padding: 0;
+
+  border: 1px solid var(--pd-gold);
+  border-radius: 12px;
+  background: #ffffff;
+  color: #242424;
+
+  overflow: auto;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.25);
+
+  * {
+    box-sizing: border-box;
+  }
+
+  &::backdrop {
+    background: rgba(0, 0, 0, 0.65);
+  }
+
+  .pd-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+
+    padding: 22px;
+    background: var(--pd-dark-red);
+    color: #ffffff;
+    border-bottom: 3px solid var(--pd-gold);
+  }
+
+  .pd-heading {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+
+    > svg {
+      color: var(--pd-gold);
+      flex-shrink: 0;
+    }
+
+    h2 {
+      margin: 0 0 5px;
+      font-size: 22px;
+      color: #ffffff;
+    }
+
+    p {
+      margin: 0;
+      font-size: 13px;
+      color: #f1dfe1;
+    }
+  }
+
+  .pd-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    width: 36px;
+    height: 36px;
+    border: 1px solid #ffffff55;
+    border-radius: 7px;
+
+    background: transparent;
+    color: #ffffff;
+    cursor: pointer;
+
+    &:hover {
+      background: #ffffff20;
+    }
+  }
+
+  .pd-content {
+    padding: 24px;
+  }
+
+  .pd-record-notice {
+    display: inline-block;
+    margin-bottom: 20px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    background: #e8f5e9;
+    color: #246b36;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .pd-section {
+    margin-bottom: 24px;
+
+    h3 {
+      margin: 0 0 16px;
+      padding-bottom: 10px;
+      color: var(--pd-dark-red);
+      border-bottom: 1px solid var(--pd-gold);
+      font-size: 16px;
+    }
+  }
+
+  .pd-grid,
+  .pd-amount-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .pd-amount-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .pd-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    min-width: 0;
+    padding: 15px;
+    background: #fafafa;
+    border: 1px solid var(--pd-border);
+    border-radius: 7px;
+
+    span {
+      font-size: 12px;
+      color: #777777;
+    }
+
+    strong {
+      font-size: 14px;
+      color: var(--pd-dark-red);
+      overflow-wrap: anywhere;
+    }
+  }
+
+  .pd-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    margin-top: 16px;
+    padding: 18px;
+    border: 1px solid var(--pd-gold);
+    border-radius: 8px;
+    background: #fff5d9;
+
+    span {
+      color: #79550d;
+      font-weight: 600;
+    }
+
+    strong {
+      font-size: 24px;
+      color: var(--pd-dark-red);
+      overflow-wrap: anywhere;
+    }
+  }
+
+  .pd-readonly-notice {
+    padding: 14px;
+    background: #fff9e8;
+    border: 1px solid #ecd18b;
+    border-radius: 7px;
+    color: #72500c;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .pd-message {
+    padding: 25px;
+    text-align: center;
+    color: #777777;
+  }
+
+  .pd-error {
+    padding: 16px;
+    border: 1px solid #f1b8b8;
+    border-radius: 7px;
+    background: #fff0f0;
+    color: #b91c1c;
+  }
+
+  .pd-footer {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    padding: 18px 24px;
+    border-top: 1px solid var(--pd-border);
+    background: #fafafa;
+  }
+
+  .pd-primary-btn,
+  .pd-secondary-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    padding: 11px 18px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:disabled {
+      background: #dddddd;
+      border-color: #dddddd;
+      color: #888888;
+      cursor: not-allowed;
+    }
+  }
+
+  .pd-primary-btn {
+    background: var(--pd-red);
+    border: 1px solid var(--pd-red);
+    color: #ffffff;
+  }
+
+  .pd-secondary-btn {
+    background: #ffffff;
+    border: 1px solid #dddddd;
+    color: var(--pd-dark-red);
+  }
+
+  button:focus-visible {
+    outline: 2px solid var(--pd-gold);
+    outline-offset: 3px;
+  }
+
+  @media (max-width: 650px) {
+    .pd-grid,
+    .pd-amount-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .pd-header,
+    .pd-content,
+    .pd-footer {
+      padding: 16px;
+    }
+  }
+}

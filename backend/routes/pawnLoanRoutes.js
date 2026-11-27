@@ -7,8 +7,16 @@ import {
 } from "../controllers/pawnLoanRedemptionController.js";
 
 import {
+  previewPawnLoanRenewal,
+} from "../controllers/pawnLoanRenewalPreviewController.js";
+
+import {
   getPawnLoanPaymentHistory,
 } from "../controllers/pawnLoanPaymentHistoryController.js";
+
+import {
+  getPawnLoanRedemptionPreview,
+} from "../controllers/pawnLoanRedemptionPreviewController.js";
 
 import {
   getPawnLoanTransactionHistory,
@@ -92,6 +100,21 @@ router.get(
   "/:id/interest-preview",
   authorize("admin", "staff"),
   getPawnLoanInterestPreview
+);
+
+router.get(
+  "/:id/redemption-preview",
+  authorize("admin", "staff"),
+  getPawnLoanRedemptionPreview
+);
+
+// GET /api/pawn-loans/:id/renewal-preview
+// Read-only renewal calculation
+
+router.get(
+  "/:id/renewal-preview",
+  authorize("admin", "staff"),
+  previewPawnLoanRenewal
 );
 
 // POST /api/pawn-loans/:id/renew
