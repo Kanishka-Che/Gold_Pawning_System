@@ -2,7 +2,10 @@
 import mongoose from "mongoose";
 
 import PawnLoan from "../models/PawnLoan.js";
-import PawnLoanRenewal from "../models/PawnLoanRenewal.js";
+import {
+  getIndividualTransactionHistory,
+  handleTransactionHistoryError,
+} from "../services/individualTransactionHistoryService.js";
 
 import {
   validateRenewalRequest,
@@ -114,149 +117,86 @@ export const renewPawnLoan = async (req, res) => {
  *
  * Read-only, paginated renewal history.
  */
-export const getPawnLoanRenewalHistory = async (req, res) => {
+
+// GET /api/pawn-loans/:id/renewals
+export const getPawnLoanRenewalHistory = async (
+  req,
+  res
+) => {
+  res.set("Cache-Control", "no-store");
+
   try {
-    if (
-      !req.user?._id ||
-      !mongoose.isObjectIdOrHexString(req.user._id)
-    ) {
-      return res.status(401).json({
-        success: false,
-        message: "Not authorized. Please login.",
+    const history =
+      await getIndividualTransactionHistory({
+        req,
+        transactionType: "renewal",
       });
-    }
 
-    if (
-      !["admin", "staff"].includes(req.user.role) ||
-      req.user.isActive !== true
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: "Renewal history access denied",
-      });
-    }
+    const renewals = history.transactions.map(
+      (transaction) => ({
+        _id: transaction.id,
 
-    const pawnLoanId = req.params?.id;
+        pawnLoan: history.loan.id,
 
-    if (
-      typeof pawnLoanId !== "string" ||
-      !mongoose.isObjectIdOrHexString(pawnLoanId)
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid pawn loan ID",
-      });
-    }
+        previousMaturityDate:
+          transaction.previousMaturityDate,
 
-    // Pagination validation
-    const query = req.query ?? {};
+        newMaturityDate:
+          transaction.newMaturityDate,
 
-    if (
-      typeof query !== "object" ||
-      Array.isArray(query) ||
-      Object.keys(query).some(
-        (key) => !["page", "limit"].includes(key)
-      )
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid pagination parameters",
-      });
-    }
+        renewedAt: transaction.transactionDate,
 
-    const parsePositiveInteger = (value, fallback) => {
-      if (value === undefined) {
-        return fallback;
-      }
+        renewedBy: transaction.recordedBy,
 
-      if (
-        typeof value !== "string" ||
-        !/^[1-9]\d*$/.test(value)
-      ) {
-        return null;
-      }
+        settingsVersion:
+          transaction.settingsVersion,
 
-      const parsed = Number(value);
+        interestSettled:
+          transaction.interestSettled,
 
-      return Number.isSafeInteger(parsed)
-        ? parsed
-        : null;
-    };
+        renewalFeePaid:
+          transaction.renewalFeePaid,
 
-    const page = parsePositiveInteger(query.page, 1);
-    const limit = parsePositiveInteger(query.limit, 20);
+        notes: transaction.notes ?? "",
 
-    if (
-      page === null ||
-      limit === null ||
-      limit > 100 ||
-      !Number.isSafeInteger((page - 1) * limit)
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Invalid pagination. Page must be positive and limit must be between 1 and 100",
-      });
-    }
+        transactionSource:
+          transaction.transactionSource,
 
-    const loan = await PawnLoan.findById(pawnLoanId)
-      .select("_id loanNumber status")
-      .lean();
+        isHistorical: transaction.isHistorical,
 
-    if (!loan) {
-      return res.status(404).json({
-        success: false,
-        message: "Pawn loan not found",
-      });
-    }
-
-    const filter = {
-      pawnLoan: loan._id,
-    };
-
-    const total = await PawnLoanRenewal.countDocuments(
-      filter
+        ...(transaction.isHistorical
+          ? {
+              importedAt: transaction.importedAt,
+              importedBy: transaction.importedBy,
+              sequenceNumber:
+                transaction.sequenceNumber,
+              historicalReference:
+                transaction.reference,
+            }
+          : {}),
+      })
     );
-
-    const renewals = await PawnLoanRenewal.find(filter)
-      .select(
-        "_id pawnLoan previousMaturityDate " +
-        "newMaturityDate renewedAt renewedBy " +
-        "settingsVersion interestSettled " +
-        "renewalFeePaid notes"
-      )
-      .sort({ renewedAt: -1, _id: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .lean();
 
     return res.status(200).json({
       success: true,
-      loan: {
-        id: loan._id,
-        loanNumber: loan.loanNumber,
-        status: loan.status,
-      },
+
+      loan: history.loan,
+
       count: renewals.length,
+
       renewals,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+
+      pagination: history.pagination,
+
+      historySummary: history.historySummary,
     });
   } catch (error) {
-    console.error(
-      "Get Pawn Loan Renewal History Error:",
+    return handleTransactionHistoryError(
+      res,
       error
     );
-
-    return res.status(500).json({
-      success: false,
-      message: "Failed to retrieve renewal history",
-    });
   }
 };
+
 
 

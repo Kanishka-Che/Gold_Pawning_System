@@ -14,6 +14,8 @@ import Redemptions from
   "./pages/Redemptions/Redemptions.jsx";
   import Overdue from "./pages/Overdue/Overdue.jsx";
   import Reports from "./pages/Reports/Reports.jsx";
+  import UserManagement from "./pages/UserManagement/UserManagement.jsx";
+  import Profile from "./pages/Profile/Profile.jsx";
 import "./App.scss";
 
 function App() {
@@ -71,6 +73,35 @@ const checkAuthentication = async () => {
     setActivePage("Dashboard");
   };
 
+  const handleSessionEnded = () => {
+  setAuth(null);
+  setActivePage("Dashboard");
+};
+
+const handleProfileUpdated = (updatedUser) => {
+  setAuth((previous) => {
+    if (!previous?.user) {
+      return previous;
+    }
+
+    if (
+      String(previous.user.id) !==
+      String(updatedUser.id)
+    ) {
+      return previous;
+    }
+
+    return {
+      ...previous,
+
+      user: {
+        ...previous.user,
+        ...updatedUser,
+      },
+    };
+  });
+};
+
   const handleLogout = async () => {
     if (loggingOut) return;
 
@@ -116,13 +147,17 @@ const checkAuthentication = async () => {
   setActivePage={setActivePage}
   collapsed={collapsed}
   setCollapsed={setCollapsed}
-  onLogout={handleLogout}
   user={auth.user}
 />
 
 
         <main className="main-content">
-          <Header />
+          <Header
+  user={auth.user}
+  setActivePage={setActivePage}
+  onLogout={handleLogout}
+  loggingOut={loggingOut}
+/>
 
           <div className="page-content">
            
@@ -142,6 +177,23 @@ const checkAuthentication = async () => {
  <Overdue />
 ) : activePage === "Reports" ? (
   <Reports />
+) : activePage === "My Profile" ? (
+  <Profile
+    mode="profile"
+    onNavigate={setActivePage}
+    onSessionEnded={handleSessionEnded}
+    onProfileUpdated={handleProfileUpdated}
+  />
+) : activePage === "Change Password" ? (
+  <Profile
+    mode="password"
+    onNavigate={setActivePage}
+    onSessionEnded={handleSessionEnded}
+    onProfileUpdated={handleProfileUpdated}
+  />
+) : activePage === "User Management" &&
+  auth.user?.role === "admin" ? (
+  <UserManagement currentUser={auth.user} />
 ) : activePage === "System Settings" &&
   auth.user?.role === "admin" ? (
   <SystemSettings />

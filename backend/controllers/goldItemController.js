@@ -24,9 +24,6 @@ const isValidationError = (error) =>
 // POST /api/gold-items
 
 export const createGoldItem = async (req, res) => {
-  console.log("=== GOLD ITEM CREATE REQUEST ===");
-  console.log("Request Body:", req.body);
-  console.log("Logged In User:", req.user?._id);
 
   if (!isValidBody(req.body)) {
     return res.status(400).json({
@@ -303,7 +300,13 @@ let isReserved = false;
     
 
     await session.withTransaction(async () => {
-      const goldItem = await GoldItem.findById(
+  // Reset state when MongoDB retries the transaction
+  updatedItem = undefined;
+  notFound = false;
+  notDraft = false;
+  isReserved = false;
+
+  const goldItem = await GoldItem.findById(
         req.params.id
       ).session(session);
 

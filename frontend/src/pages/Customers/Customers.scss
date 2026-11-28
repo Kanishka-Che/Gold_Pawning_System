@@ -391,3 +391,167 @@
     }
   }
 }
+
+// Customer filtering and summary cards
+
+.customers-page {
+  .customer-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .customer-summary-grid .customer-summary {
+    width: 100%;
+    min-width: 0;
+    margin-bottom: 0;
+    padding: 18px;
+    text-align: left;
+    color: $white;
+    font-family: inherit;
+    cursor: pointer;
+
+    transition:
+      border-color 0.2s ease,
+      background 0.2s ease;
+
+    &:hover {
+      border-color: $gold;
+      background: $red-sidebar;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $gold;
+      outline-offset: 3px;
+    }
+
+    &.selected-summary {
+      border-color: $gold;
+      box-shadow: 0 0 0 1px rgba(244, 196, 48, 0.2);
+    }
+  }
+
+  .summary-icon {
+    flex-shrink: 0;
+
+    &.total-icon {
+      background: $gold;
+      color: $red-dark;
+    }
+
+    &.active-icon {
+      background: rgba(27, 102, 51, 0.35);
+      color: #91f1a3;
+    }
+
+    &.inactive-icon {
+      background: rgba(198, 28, 56, 0.25);
+      color: #ffbdc7;
+    }
+  }
+
+  .summary-content {
+    min-width: 0;
+
+    span {
+      color: $muted;
+      font-size: 13px;
+    }
+
+    h2 {
+      margin: 5px 0 0;
+      color: $white;
+      font-size: 26px;
+      font-weight: 700;
+    }
+  }
+
+  .customer-status-filter {
+    min-height: 38px;
+    min-width: 125px;
+    padding: 8px 12px;
+    border: 1px solid $border-red;
+    border-radius: 8px;
+    background: #3b0712;
+    color: $white;
+    outline: none;
+    cursor: pointer;
+
+    &:focus {
+      border-color: $gold;
+    }
+
+    option {
+      background: #3b0712;
+      color: $white;
+    }
+  }
+
+  .toolbar-actions {
+    flex-wrap: wrap;
+  }
+
+  .customer-results-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+    color: $muted;
+    font-size: 13px;
+  }
+
+  .clear-customer-filters {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border: 1px solid $border-red;
+    border-radius: 6px;
+    background: transparent;
+    color: $gold-light;
+    cursor: pointer;
+
+    &:hover {
+      border-color: $gold;
+    }
+  }
+
+  .customers-table-wrapper {
+    overflow-x: auto;
+  }
+
+  @media (max-width: 900px) {
+    .customers-toolbar {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .customer-summary-grid {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .toolbar-actions {
+      width: 100%;
+    }
+
+    .customer-status-filter {
+      width: 100%;
+    }
+
+    .search-box {
+      min-width: 0;
+      flex: 1;
+
+      input {
+        width: 100%;
+        min-width: 0;
+      }
+    }
+  }
+}

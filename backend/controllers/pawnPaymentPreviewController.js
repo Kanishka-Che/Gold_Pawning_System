@@ -1,12 +1,16 @@
 import mongoose from "mongoose";
 
-import {
-  calculatePawnLoanInterestPreview,
-} from "./pawnLoanController.js";
+// import {
+//   calculatePawnLoanInterestPreview,
+// } from "./pawnLoanController.js";
+
+// import {
+//   calculateLoanBalanceSummary,
+// } from "../utils/loanBalanceSummary.js";
 
 import {
-  calculateLoanBalanceSummary,
-} from "../utils/loanBalanceSummary.js";
+  getLoanFinancialBalance,
+} from "../services/loanBalanceService.js";
 
 import {
   allocatePawnPayment,
@@ -50,6 +54,8 @@ const requestError = (message, statusCode = 409) => {
 // POST /api/pawn-payments/preview
 export const previewPawnPayment = async (req, res) => {
   let session;
+
+  res.set("Cache-Control", "no-store");
 
   try {
     const allowedFields = [
@@ -112,14 +118,13 @@ export const previewPawnPayment = async (req, res) => {
         const calculationDate = new Date();
 
         const {
-          loan,
-          payments,
-          preview: interestPreview,
-        } = await calculatePawnLoanInterestPreview({
-          loanId: pawnLoanId,
-          session,
-          calculationDate,
-        });
+  loan,
+  balance,
+} = await getLoanFinancialBalance({
+  loanId: pawnLoanId,
+  session,
+  calculationDate,
+});
 
         const partialPayment =
           loan.settingsSnapshot?.partialPayment;
@@ -142,12 +147,6 @@ export const previewPawnPayment = async (req, res) => {
             "Unsupported loan payment settings"
           );
         }
-
-        const balance = calculateLoanBalanceSummary({
-          originalPrincipal: loan.principalAmount,
-          accruedInterest: interestPreview.accruedInterest,
-          payments,
-        });
 
         const totalCents = toCents(
           balance.combinedBalance

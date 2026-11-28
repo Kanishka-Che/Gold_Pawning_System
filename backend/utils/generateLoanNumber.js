@@ -1,10 +1,9 @@
-
 import Counter from "../models/Counter.js";
 
 export const generateLoanNumber = async (session) => {
-  if (!session) {
+  if (!session || !session.inTransaction()) {
     throw new Error(
-      "Database transaction session is required"
+      "Active database transaction is required"
     );
   }
 
@@ -23,19 +22,26 @@ export const generateLoanNumber = async (session) => {
         sequence: 1,
       },
     },
-    
-{
-  returnDocument: "after",
-  upsert: true,
-  session,
-}
-
+    {
+      returnDocument: "after",
+      upsert: true,
+      session,
+    }
   );
 
-  const sequence = String(counter.sequence).padStart(
-    6,
-    "0"
-  );
+  if (
+    !counter ||
+    !Number.isSafeInteger(counter.sequence) ||
+    counter.sequence < 1
+  ) {
+    throw new Error(
+      "Invalid pawn loan number sequence"
+    );
+  }
+
+  const sequence = String(
+    counter.sequence
+  ).padStart(6, "0");
 
   return `SIG-${year}-${sequence}`;
 };

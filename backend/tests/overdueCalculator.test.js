@@ -83,12 +83,18 @@ test("Overdue days calculated correctly", () => {
   const result = calculate(createLoan());
 
   assert.deepEqual(result, {
-    loanStatus: "active",
-    overdueStatus: "overdue",
-    daysOverdue: 6,
-    gracePeriodDays: 3,
-    daysAfterGrace: 3,
-  });
+  loanStatus: "active",
+  overdueStatus: "overdue",
+  classification: "overdue",
+  daysOverdue: 6,
+  daysUntilMaturity: 0,
+  gracePeriodDays: 3,
+  daysAfterGrace: 3,
+  remainingGraceDays: 0,
+  isDueToday: false,
+  isUpcomingDue: false,
+  isOverdue: true,
+});
 });
 
 test("Zero grace period becomes overdue next day", () => {

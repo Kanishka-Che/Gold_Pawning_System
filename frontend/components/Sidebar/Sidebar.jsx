@@ -7,7 +7,6 @@ import {
   RefreshCw,
   FileText,
   Settings,
-  LogOut,
   ChevronLeft,
   HandCoins,
   CalendarClock,
@@ -39,7 +38,6 @@ export default function Sidebar({
   setActivePage,
   collapsed,
   setCollapsed,
-  onLogout,
   user,
 }) {
 
@@ -107,18 +105,6 @@ export default function Sidebar({
           );
         })}
       </nav>
-
-      <div className="sidebar-bottom">
-  <button
-    type="button"
-    className="nav-item"
-    onClick={onLogout}
-    title="Logout"
-  >
-    <LogOut size={19} />
-    {!collapsed && <span>Logout</span>}
-  </button>
-</div>
     </aside>
   );
 }
