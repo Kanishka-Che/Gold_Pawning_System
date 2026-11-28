@@ -135,17 +135,27 @@ try {
  */
 export const getAllUsers = async (req, res) => {
   try {
+    res.set("Cache-Control", "no-store");
+
     const users = await User.find()
-      .select("_id username role isActive createdAt updatedAt")
-      .sort({ createdAt: -1 });
+      .select(
+        "_id username role isActive profileImage createdAt updatedAt"
+      )
+      .sort({
+        createdAt: -1,
+      });
 
     return res.status(200).json({
       success: true,
       count: users.length,
       users,
     });
+
   } catch (error) {
-    console.error("Get Users Error:", error);
+    console.error(
+      "Get Users Error:",
+      error
+    );
 
     return res.status(500).json({
       success: false,

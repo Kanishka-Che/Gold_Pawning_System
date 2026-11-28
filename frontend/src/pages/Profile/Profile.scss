@@ -1,0 +1,467 @@
+
+@use "../../styles/variables" as *;
+
+.account-profile {
+  width: 100%;
+  min-width: 0;
+  max-width: 950px;
+  color: $white;
+
+  button,
+  input {
+    font: inherit;
+    box-sizing: border-box;
+  }
+
+  button {
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $gold;
+      outline-offset: 2px;
+    }
+  }
+
+  .ap-page-header {
+    margin-bottom: 24px;
+
+    h1 {
+      margin: 0 0 8px;
+      color: $gold;
+      font-size: 27px;
+      font-weight: 700;
+    }
+
+    p {
+      margin: 0;
+      color: $muted;
+      font-size: 13px;
+    }
+  }
+
+  // Navigation tabs
+
+  .ap-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 22px;
+
+    button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 18px;
+      border: 1px solid $border-red;
+      border-radius: 8px;
+      background: $red-dark;
+      color: $white;
+      font-size: 13px;
+
+      &:hover:not(:disabled) {
+        border-color: $gold;
+      }
+
+      &.active {
+        border-color: $gold;
+        background: $red-bright;
+        color: $gold-light;
+      }
+    }
+  }
+
+  // Profile panels
+
+  .ap-panel {
+    padding: 26px;
+    margin-bottom: 22px;
+    background: $red-dark;
+    border: 1px solid $border-red;
+    border-radius: 13px;
+  }
+
+  .ap-profile-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid $border-red;
+
+    h2 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      color: $white;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  .ap-avatar {
+    width: 85px;
+    height: 85px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    border: 2px solid $gold;
+    border-radius: 50%;
+    background: $red-main;
+    color: $gold;
+  }
+
+  .ap-role {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: $gold;
+    font-size: 13px;
+  }
+
+  .ap-active {
+    display: block;
+    margin-top: 8px;
+    color: #86efac;
+    font-size: 12px;
+  }
+
+  .ap-details {
+    > div {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 19px 0;
+      border-bottom: 1px solid $border-red;
+      font-size: 13px;
+
+      &:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+
+      span {
+        color: $muted;
+      }
+
+      strong {
+        color: $white;
+        font-weight: 500;
+        overflow-wrap: anywhere;
+      }
+    }
+  }
+
+  // Security section
+
+  .ap-security-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+
+    > svg {
+      flex-shrink: 0;
+      color: $gold;
+    }
+
+    h2 {
+      margin: 0 0 6px;
+      color: $gold;
+      font-size: 18px;
+    }
+
+    p {
+      margin: 0;
+      color: $muted;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+  }
+
+  .ap-section-title {
+    margin: 0 0 24px;
+    color: $gold;
+    font-size: 20px;
+  }
+
+  // Password form
+
+  .ap-password-form {
+    max-width: 620px;
+  }
+
+  .ap-field {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    margin-bottom: 22px;
+
+    label {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    small {
+      color: $muted;
+      font-size: 11px;
+      line-height: 1.6;
+    }
+  }
+
+  .ap-password-input {
+    display: flex;
+    align-items: center;
+    border: 1px solid $border-red;
+    border-radius: 8px;
+    background: $red-sidebar;
+    overflow: hidden;
+
+    &:focus-within {
+      border-color: $gold;
+    }
+
+    input {
+      width: 100%;
+      min-width: 0;
+      padding: 13px;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: $white;
+      font-size: 13px;
+
+      &::placeholder {
+        color: $muted;
+      }
+    }
+
+    button {
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      padding: 12px;
+      border: none;
+      background: transparent;
+      color: $gold;
+    }
+  }
+
+  .ap-security-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 15px;
+    margin-bottom: 24px;
+    border: 1px solid rgba(244, 196, 48, 0.4);
+    border-radius: 8px;
+    background: rgba(244, 196, 48, 0.08);
+    color: $gold-light;
+
+    svg {
+      flex-shrink: 0;
+    }
+
+    p {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+  }
+
+  .ap-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .ap-primary-btn,
+  .ap-secondary-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .ap-primary-btn {
+    border: 1px solid $gold;
+    background: $gold;
+    color: $red-dark;
+
+    &:hover:not(:disabled) {
+      background: $gold-light;
+    }
+  }
+
+  .ap-secondary-btn {
+    border: 1px solid $border-red;
+    background: transparent;
+    color: $white;
+
+    &:hover:not(:disabled) {
+      background: $red-main;
+    }
+  }
+
+  .ap-error {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px;
+    margin-bottom: 20px;
+    border: 1px solid #f87171;
+    border-radius: 8px;
+    background: #641525;
+    color: #fecaca;
+    font-size: 13px;
+
+    svg {
+      flex-shrink: 0;
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .account-profile {
+    .ap-panel {
+      padding: 18px;
+    }
+
+    .ap-page-header h1 {
+      font-size: 22px;
+    }
+
+    .ap-avatar {
+      width: 60px;
+      height: 60px;
+    }
+
+    .ap-profile-header h2 {
+      font-size: 19px;
+    }
+
+    .ap-details > div {
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .ap-form-actions {
+      flex-direction: column;
+    }
+  }
+}
+
+
+.account-profile {
+  .ap-image-editor {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+
+    padding: 24px 0;
+
+    border-bottom: 1px solid $border-red;
+  }
+
+  .ap-image-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    flex-shrink: 0;
+    gap: 10px;
+
+    small {
+      color: $gold;
+      font-size: 11px;
+    }
+  }
+
+  .ap-image-content {
+    flex: 1;
+    min-width: 0;
+
+    h3 {
+      margin: 0 0 8px;
+
+      color: $gold;
+      font-size: 17px;
+      font-weight: 600;
+    }
+
+    p {
+      margin: 0 0 16px;
+
+      color: $muted;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+  }
+
+  .ap-image-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 10px;
+  }
+
+  .ap-remove-photo-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 8px;
+    padding: 12px 16px;
+
+    border: 1px solid #f87171;
+    border-radius: 8px;
+
+    background: transparent;
+    color: #fecaca;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    &:hover:not(:disabled) {
+      background: rgba(248, 113, 113, 0.1);
+    }
+  }
+
+  .ap-image-success {
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+    margin-bottom: 15px;
+    padding: 12px;
+
+    border: 1px solid #4ade80;
+    border-radius: 8px;
+
+    background: #153c29;
+    color: #bbf7d0;
+
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 600px) {
+  .account-profile {
+    .ap-image-editor {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .ap-image-content {
+      width: 100%;
+    }
+  }
+}

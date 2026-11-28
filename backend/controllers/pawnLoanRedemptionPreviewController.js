@@ -4,13 +4,17 @@ import Customer from "../models/Customer.js";
 import GoldItem from "../models/GoldItem.js";
 import PawnLoanRedemption from "../models/PawnLoanRedemption.js";
 
-import {
-  calculatePawnLoanInterestPreview,
-} from "./pawnLoanController.js";
+// import {
+//   calculatePawnLoanInterestPreview,
+// } from "./pawnLoanController.js";
+
+// import {
+//   calculateLoanBalanceSummary,
+// } from "../utils/loanBalanceSummary.js";
 
 import {
-  calculateLoanBalanceSummary,
-} from "../utils/loanBalanceSummary.js";
+  getLoanFinancialBalance,
+} from "../services/loanBalanceService.js";
 
 import {
   calculateOverdueStatus,
@@ -91,14 +95,15 @@ export const getPawnLoanRedemptionPreview = async (
       async () => {
         // 1. Reuse existing interest calculation.
         const {
-          loan,
-          payments,
-          preview: interestPreview,
-        } = await calculatePawnLoanInterestPreview({
-          loanId,
-          session,
-          calculationDate,
-        });
+  loan,
+  balance,
+  interestPreview,
+  effectiveMaturityDate,
+} = await getLoanFinancialBalance({
+  loanId,
+  session,
+  calculationDate,
+});
 
         // Load customer and gold item references.
         const loanDetails = await mongoose
@@ -186,20 +191,15 @@ export const getPawnLoanRedemptionPreview = async (
         }
 
         // 7. Calculate outstanding balances.
-        const balance = calculateLoanBalanceSummary({
-          originalPrincipal: loan.principalAmount,
-
-          accruedInterest:
-            interestPreview.accruedInterest,
-
-          payments,
-        });
 
         // 8. Calculate overdue information.
-        const overdue = calculateOverdueStatus({
-          loan,
-          calculationDate,
-        });
+       const overdue = calculateOverdueStatus({
+  loan: {
+    ...loan,
+    maturityDate: effectiveMaturityDate,
+  },
+  calculationDate,
+});
 
         // 9. Read original redemption settings.
         const redemptionSettings =
@@ -261,7 +261,7 @@ export const getPawnLoanRedemptionPreview = async (
 
             issueDate: loan.issueDate,
 
-            maturityDate: loan.maturityDate,
+            maturityDate: effectiveMaturityDate,
 
             settingsVersion: loan.settingsVersion,
           },

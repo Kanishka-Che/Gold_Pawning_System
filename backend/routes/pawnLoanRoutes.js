@@ -7,8 +7,31 @@ import {
 } from "../controllers/pawnLoanRedemptionController.js";
 
 import {
+  previewLegacyPawnInterest,
+} from "../controllers/legacyInterestController.js";
+
+import {
+  getLegacyTransactions,
+  createLegacyTransaction,
+  updateLegacyTransaction,
+  removeLegacyTransaction,
+  confirmLegacyHistory,
+} from "../controllers/legacyTransactionController.js";
+
+import {
   previewPawnLoanRenewal,
 } from "../controllers/pawnLoanRenewalPreviewController.js";
+
+import {
+  getLegacyOpeningBalance,
+  updateLegacyOpeningBalance,
+  confirmLegacyOpeningBalance,
+} from "../controllers/legacyOpeningBalanceController.js";
+
+import {
+  createLegacyPawnLoan,
+  activateLegacyPawnLoan,
+} from "../controllers/legacyPawnLoanController.js";
 
 import {
   getPawnLoanPaymentHistory,
@@ -49,6 +72,91 @@ const router = express.Router();
 
 // Authentication required
 router.use(protect);
+
+// Create legacy pawn loan draft - Admin only
+router.post(
+  "/legacy",
+  authorize("admin"),
+  createLegacyPawnLoan
+);
+
+
+// Legacy pawn loan activation - Admin only
+// Actual activation remains disabled.
+router.patch(
+  "/legacy/:id/activate",
+  authorize("admin"),
+  activateLegacyPawnLoan
+);
+
+// Read legacy opening balance - Admin only
+router.get(
+  "/legacy/:id/opening-balance",
+  authorize("admin"),
+  getLegacyOpeningBalance
+);
+
+
+// Create or update opening balance - Admin only
+router.put(
+  "/legacy/:id/opening-balance",
+  authorize("admin"),
+  updateLegacyOpeningBalance
+);
+
+
+// Verify opening balance - Admin only
+router.patch(
+  "/legacy/:id/opening-balance/verify",
+  authorize("admin"),
+  confirmLegacyOpeningBalance
+);
+
+// Read historical transactions - Admin only
+router.get(
+  "/legacy/:id/history",
+  authorize("admin"),
+  getLegacyTransactions
+);
+
+
+// Add historical transaction - Admin only
+router.post(
+  "/legacy/:id/history",
+  authorize("admin"),
+  createLegacyTransaction
+);
+
+
+// Update historical transaction - Admin only
+router.put(
+  "/legacy/:id/history/:transactionId",
+  authorize("admin"),
+  updateLegacyTransaction
+);
+
+
+// Void historical transaction - Admin only
+router.patch(
+  "/legacy/:id/history/:transactionId/void",
+  authorize("admin"),
+  removeLegacyTransaction
+);
+
+
+// Verify historical transaction history
+router.patch(
+  "/legacy/:id/history/verify",
+  authorize("admin"),
+  confirmLegacyHistory
+);
+
+// Legacy migration interest preview - Admin only
+router.get(
+  "/legacy/:id/interest-preview",
+  authorize("admin"),
+  previewLegacyPawnInterest
+);
 
 // Admin and Staff can create draft pawn loans
 router.post(

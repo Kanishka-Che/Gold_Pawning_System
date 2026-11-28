@@ -1,12 +1,16 @@
 import mongoose from "mongoose";
 
-import {
-  calculatePawnLoanInterestPreview,
-} from "./pawnLoanController.js";
+// import {
+//   calculatePawnLoanInterestPreview,
+// } from "./pawnLoanController.js";
+
+// import {
+//   calculateLoanBalanceSummary,
+// } from "../utils/loanBalanceSummary.js";
 
 import {
-  calculateLoanBalanceSummary,
-} from "../utils/loanBalanceSummary.js";
+  getLoanFinancialBalance,
+} from "../services/loanBalanceService.js";
 
 import {
   validateRenewalEligibility,
@@ -144,15 +148,14 @@ export const previewPawnLoanRenewal = async (
         const calculationDate = new Date();
 
         const {
-          loan,
-          payments,
-          preview: interestPreview,
-        } =
-          await calculatePawnLoanInterestPreview({
-            loanId: pawnLoanId,
-            session,
-            calculationDate,
-          });
+  loan,
+  balance,
+  effectiveMaturityDate,
+} = await getLoanFinancialBalance({
+  loanId: pawnLoanId,
+  session,
+  calculationDate,
+});
 
         // Validate renewal eligibility
         try {
@@ -178,32 +181,22 @@ export const previewPawnLoanRenewal = async (
         }
 
         if (
-          !loan.maturityDate ||
-          !Number.isFinite(
-            new Date(
-              loan.maturityDate
-            ).getTime()
-          )
-        ) {
-          throw requestError(
-            "Invalid loan maturity date"
-          );
-        }
+  !effectiveMaturityDate ||
+  !Number.isFinite(
+    new Date(
+      effectiveMaturityDate
+    ).getTime()
+  )
+) {
+  throw requestError(
+    "Invalid effective maturity date"
+  );
+}
 
-        const currentMaturityDate =
-          new Date(loan.maturityDate);
+const currentMaturityDate =
+  new Date(effectiveMaturityDate);
 
         // Calculate existing outstanding balance
-        const balance =
-          calculateLoanBalanceSummary({
-            originalPrincipal:
-              loan.principalAmount,
-
-            accruedInterest:
-              interestPreview.accruedInterest,
-
-            payments,
-          });
 
         const principalCents = toCents(
           balance.outstandingPrincipal
@@ -224,11 +217,14 @@ export const previewPawnLoanRenewal = async (
         }
 
         // Calculate overdue status
-        const overdue =
-          calculateOverdueStatus({
-            loan,
-            calculationDate,
-          });
+       const overdue =
+  calculateOverdueStatus({
+    loan: {
+      ...loan,
+      maturityDate: effectiveMaturityDate,
+    },
+    calculationDate,
+  });
 
         // Candidate 1:
         // Extend from current maturity date

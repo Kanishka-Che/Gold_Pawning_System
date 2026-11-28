@@ -1,19 +1,50 @@
 
 import mongoose from "mongoose";
 
-import PawnLoan from "../models/PawnLoan.js";
-import PawnPayment from "../models/PawnPayment.js";
-import PawnLoanRenewal from "../models/PawnLoanRenewal.js";
-import PawnLoanRedemption from "../models/PawnLoanRedemption.js";
+import {
+  getCombinedTransactionHistory,
+} from "../services/combinedTransactionHistoryService.js";
 
-// GET /api/pawn-loans/:id/transactions?page=1&limit=20
-// Read-only combined financial transaction history.
-export const getPawnLoanTransactionHistory = async (req, res) => {
+
+const parsePositiveInteger = (
+  value,
+  fallback
+) => {
+  if (value === undefined) {
+    return fallback;
+  }
+
+  if (
+    typeof value !== "string" ||
+    !/^[1-9]\d*$/.test(value)
+  ) {
+    return null;
+  }
+
+  const parsed = Number(value);
+
+  return Number.isSafeInteger(parsed)
+    ? parsed
+    : null;
+};
+
+
+// GET /api/pawn-loans/:id/transactions
+export const getPawnLoanTransactionHistory = async (
+  req,
+  res
+) => {
+  let session;
+
+  res.set("Cache-Control", "no-store");
+
   try {
-    // Defense-in-depth authentication.
+    // 1. Authentication
     if (
       !req.user?._id ||
-      !mongoose.isObjectIdOrHexString(req.user._id)
+      !mongoose.isObjectIdOrHexString(
+        req.user._id
+      )
     ) {
       return res.status(401).json({
         success: false,
@@ -21,9 +52,11 @@ export const getPawnLoanTransactionHistory = async (req, res) => {
       });
     }
 
-    // Defense-in-depth authorization.
+    // 2. Authorization
     if (
-      !["admin", "staff"].includes(req.user.role) ||
+      !["admin", "staff"].includes(
+        req.user.role
+      ) ||
       req.user.isActive !== true
     ) {
       return res.status(403).json({
@@ -32,11 +65,14 @@ export const getPawnLoanTransactionHistory = async (req, res) => {
       });
     }
 
+    // 3. Validate loan ID
     const pawnLoanId = req.params?.id;
 
     if (
       typeof pawnLoanId !== "string" ||
-      !mongoose.isObjectIdOrHexString(pawnLoanId)
+      !mongoose.isObjectIdOrHexString(
+        pawnLoanId
+      )
     ) {
       return res.status(400).json({
         success: false,
@@ -44,13 +80,19 @@ export const getPawnLoanTransactionHistory = async (req, res) => {
       });
     }
 
+    // 4. Validate query parameters
     const query = req.query ?? {};
+
+    const allowedKeys = new Set([
+      "page",
+      "limit",
+    ]);
 
     if (
       typeof query !== "object" ||
       Array.isArray(query) ||
       Object.keys(query).some(
-        (key) => !["page", "limit"].includes(key)
+        (key) => !allowedKeys.has(key)
       )
     ) {
       return res.status(400).json({
@@ -59,198 +101,130 @@ export const getPawnLoanTransactionHistory = async (req, res) => {
       });
     }
 
-    const parsePositiveInteger = (value, fallback) => {
-      if (value === undefined) return fallback;
+    // Reject duplicate raw query parameters
+    const rawQuery =
+      req.originalUrl?.split("?")[1];
 
-      if (
-        typeof value !== "string" ||
-        !/^[1-9]\d*$/.test(value)
-      ) {
-        return null;
+    if (rawQuery !== undefined) {
+      const params =
+        new URLSearchParams(rawQuery);
+
+      for (const key of params.keys()) {
+        if (
+          !allowedKeys.has(key) ||
+          params.getAll(key).length !== 1
+        ) {
+          return res.status(400).json({
+            success: false,
+            message:
+              "Invalid pagination parameters",
+          });
+        }
       }
+    }
 
-      const parsed = Number(value);
+    const page = parsePositiveInteger(
+      query.page,
+      1
+    );
 
-      return Number.isSafeInteger(parsed) ? parsed : null;
-    };
+    const limit = parsePositiveInteger(
+      query.limit,
+      20
+    );
 
-    
-const page = parsePositiveInteger(query.page, 1);
-const limit = parsePositiveInteger(query.limit, 20);
-
-const MAX_HISTORY_SCAN = 10000;
-
-if (
-  page === null ||
-  limit === null ||
-  limit > 100 ||
-  !Number.isSafeInteger(page * limit) ||
-  page * limit > MAX_HISTORY_SCAN
-) {
-  return res.status(400).json({
-    success: false,
-    message: "Invalid pagination parameters",
-  });
-}
-
-
-    const loan = await PawnLoan.findById(pawnLoanId)
-      .select("_id loanNumber status")
-      .lean();
-
-    if (!loan) {
-      return res.status(404).json({
+    if (
+      page === null ||
+      limit === null ||
+      limit > 100 ||
+      !Number.isSafeInteger(page * limit) ||
+      page * limit > 10000
+    ) {
+      return res.status(400).json({
         success: false,
-        message: "Pawn loan not found",
+        message: "Invalid pagination parameters",
       });
     }
 
-    const filter = { pawnLoan: loan._id };
+    // 5. Start consistent database read
+    session = await mongoose.startSession();
 
-    // Retrieve at most page * limit records from each source.
-    // This is sufficient to calculate the requested merged page.
-    const take = page * limit;
+    let history;
 
-    const [
-      paymentTotal,
-      renewalTotal,
-      redemptionTotal,
-      payments,
-      renewals,
-      redemptions,
-    ] = await Promise.all([
-      PawnPayment.countDocuments(filter),
-      PawnLoanRenewal.countDocuments(filter),
-      PawnLoanRedemption.countDocuments(filter),
+    await session.withTransaction(
+      async () => {
+        history =
+          await getCombinedTransactionHistory({
+            req,
 
-      PawnPayment.find(filter)
-        .select(
-          "_id amount interestPaid principalPaid " +
-          "paymentMethod paidAt recordedBy reference"
-        )
-        .sort({ paidAt: -1, _id: -1 })
-        .limit(take)
-        .lean(),
+            loanId: pawnLoanId,
 
-      PawnLoanRenewal.find(filter)
-        .select(
-          "_id renewedAt renewedBy interestSettled " +
-          "renewalFeePaid previousMaturityDate " +
-          "newMaturityDate settingsVersion"
-        )
-        .sort({ renewedAt: -1, _id: -1 })
-        .limit(take)
-        .lean(),
+            page,
 
-      PawnLoanRedemption.find(filter)
-        .select(
-          "_id redeemedAt redeemedBy principalSettled " +
-          "interestSettled penaltySettled totalSettled " +
-          "settingsVersion"
-        )
-        .sort({ redeemedAt: -1, _id: -1 })
-        .limit(take)
-        .lean(),
-    ]);
+            limit,
 
-    const transactions = [
-      ...payments.map((payment) => ({
-        id: payment._id,
-        type: "payment",
-        transactionDate: payment.paidAt,
-        amount: payment.amount,
-        interestPaid: payment.interestPaid,
-        principalPaid: payment.principalPaid,
-        paymentMethod: payment.paymentMethod,
-        reference: payment.reference,
-        recordedBy: payment.recordedBy,
-      })),
+            session,
+          });
+      },
+      {
+        readConcern: {
+          level: "snapshot",
+        },
 
-      ...renewals.map((renewal) => ({
-        id: renewal._id,
-        type: "renewal",
-        transactionDate: renewal.renewedAt,
-        amount:
-          Math.round(
-            (renewal.interestSettled + renewal.renewalFeePaid) * 100
-          ) / 100,
-        interestSettled: renewal.interestSettled,
-        renewalFeePaid: renewal.renewalFeePaid,
-        previousMaturityDate: renewal.previousMaturityDate,
-        newMaturityDate: renewal.newMaturityDate,
-        settingsVersion: renewal.settingsVersion,
-        recordedBy: renewal.renewedBy,
-      })),
-
-      ...redemptions.map((redemption) => ({
-        id: redemption._id,
-        type: "redemption",
-        transactionDate: redemption.redeemedAt,
-        amount: redemption.totalSettled,
-        principalSettled: redemption.principalSettled,
-        interestSettled: redemption.interestSettled,
-        penaltySettled: redemption.penaltySettled,
-        settingsVersion: redemption.settingsVersion,
-        recordedBy: redemption.redeemedBy,
-      })),
-    ];
-
-    const typeOrder = {
-      payment: 0,
-      renewal: 1,
-      redemption: 2,
-    };
-
-    transactions.sort((a, b) => {
-      const dateDifference =
-        new Date(b.transactionDate).getTime() -
-        new Date(a.transactionDate).getTime();
-
-      if (dateDifference !== 0) return dateDifference;
-
-      const typeDifference =
-        typeOrder[a.type] - typeOrder[b.type];
-
-      if (typeDifference !== 0) return typeDifference;
-
-      return String(b.id).localeCompare(String(a.id));
-    });
-
-    const total =
-      paymentTotal + renewalTotal + redemptionTotal;
-
-    const startIndex = (page - 1) * limit;
-
-    const paginatedTransactions = transactions.slice(
-      startIndex,
-      startIndex + limit
+        readPreference: "primary",
+      }
     );
 
+    // 6. Return combined transaction history
     return res.status(200).json({
       success: true,
-      loan: {
-        id: loan._id,
-        loanNumber: loan.loanNumber,
-        status: loan.status,
-      },
-      count: paginatedTransactions.length,
-      transactions: paginatedTransactions,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+
+      ...history,
     });
+
   } catch (error) {
+    if (
+      [400, 401, 403, 404, 409].includes(
+        error.statusCode
+      )
+    ) {
+      return res.status(error.statusCode).json({
+        success: false,
+
+        message: error.message,
+      });
+    }
+
+    if (
+      error.code === 112 ||
+      error.hasErrorLabel?.(
+        "TransientTransactionError"
+      )
+    ) {
+      return res.status(409).json({
+        success: false,
+
+        message:
+          "Transaction history changed. Reload and try again.",
+      });
+    }
+
     console.error(
-      "Get Pawn Loan Transaction History Error:",
-      error
+      "Get Combined Transaction History Error:",
+      error.name,
+      error.code
     );
 
     return res.status(500).json({
       success: false,
-      message: "Failed to retrieve transaction history",
+
+      message:
+        "Failed to retrieve transaction history",
     });
+
+  } finally {
+    if (session) {
+      await session.endSession();
+    }
   }
 };

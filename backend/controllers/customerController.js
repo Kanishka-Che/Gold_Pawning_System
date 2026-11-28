@@ -1,6 +1,71 @@
+import mongoose from "mongoose";
+
 import Customer from "../models/Customer.js";
 import Counter from "../models/Counter.js";
-import { validateCustomer } from "../utils/customerValidation.js";
+
+import {
+  validateCustomer,
+} from "../utils/customerValidation.js";
+
+import {
+  buildCustomerFilter,
+} from "../utils/customerFilter.js";
+
+import {
+  findLegacyCustomerByNic,
+  getLegacyCustomerEligibility,
+  LegacyCustomerError,
+} from "../services/legacyCustomerService.js";
+
+import {
+  createAuditLog,
+} from "../utils/auditLogger.js";
+
+import {
+  getCustomerChangedFields,
+  getCustomerStatusAuditAction,
+} from "../utils/customerAudit.js";
+
+
+function customerError(
+  statusCode,
+  message,
+  errors = undefined
+) {
+  const error = new Error(message);
+
+  error.statusCode = statusCode;
+  error.errors = errors;
+
+  return error;
+}
+
+async function runCustomerTransaction(work) {
+  const session = await mongoose.startSession();
+
+  try {
+    let result;
+
+    await session.withTransaction(
+      async () => {
+        result = await work(session);
+      },
+      {
+        readConcern: {
+          level: "snapshot",
+        },
+        writeConcern: {
+          w: "majority",
+        },
+        readPreference: "primary",
+      }
+    );
+
+    return result;
+  } finally {
+    await session.endSession();
+  }
+}
 
 // Register a new customer
 
@@ -20,40 +85,82 @@ export const createCustomer = async (req, res) => {
     const { fullName, nic, phone, address } =
       validation.values;
 
-    const existingCustomer = await Customer.findOne({
-      nic,
-    });
+    const customer = await runCustomerTransaction(
+      async (session) => {
+        const existingCustomer = await Customer.findOne({
+          nic,
+        }).session(session);
 
-    if (existingCustomer) {
-      return res.status(409).json({
-        success: false,
-        message: "Customer NIC already registered",
-        errors: {
-          nic: "This NIC is already registered",
-        },
-      });
-    }
+        if (existingCustomer) {
+          throw customerError(
+            409,
+            "Customer NIC already registered",
+            {
+              nic: "This NIC is already registered",
+            }
+          );
+        }
 
-    const counter = await Counter.findByIdAndUpdate(
-      "customerCode",
-      { $inc: { sequence: 1 } },
-      {
-        new: true,
-        upsert: true,
+        const counter = await Counter.findByIdAndUpdate(
+          "customerCode",
+          {
+            $inc: {
+              sequence: 1,
+            },
+          },
+          {
+            new: true,
+            upsert: true,
+            session,
+          }
+        );
+
+        if (
+          !counter ||
+          !Number.isSafeInteger(counter.sequence) ||
+          counter.sequence < 1
+        ) {
+          throw new Error(
+            "Invalid customer code sequence"
+          );
+        }
+
+        const customerCode = `CUS${String(
+          counter.sequence
+        ).padStart(4, "0")}`;
+
+        const [createdCustomer] = await Customer.create(
+          [
+            {
+              customerCode,
+              fullName,
+              nic,
+              phone,
+              address,
+              status: "active",
+            },
+          ],
+          {
+            session,
+          }
+        );
+
+        await createAuditLog({
+          req,
+          action: "CUSTOMER_CREATED",
+          targetType: "Customer",
+          targetId: createdCustomer._id,
+          details: {
+            customerCode:
+              createdCustomer.customerCode,
+            status: createdCustomer.status,
+          },
+          session,
+        });
+
+        return createdCustomer;
       }
     );
-
-    const customerCode = `CUS${String(
-      counter.sequence
-    ).padStart(4, "0")}`;
-
-    const customer = await Customer.create({
-      customerCode,
-      fullName,
-      nic,
-      phone,
-      address,
-    });
 
     return res.status(201).json({
       success: true,
@@ -61,6 +168,14 @@ export const createCustomer = async (req, res) => {
       customer,
     });
   } catch (error) {
+    if (error.statusCode === 409) {
+      return res.status(409).json({
+        success: false,
+        message: error.message,
+        errors: error.errors,
+      });
+    }
+
     if (error.code === 11000) {
       return res.status(409).json({
         success: false,
@@ -68,7 +183,11 @@ export const createCustomer = async (req, res) => {
       });
     }
 
-    console.error("Create Customer Error:", error);
+    console.error(
+      "Create Customer Error:",
+      error.name,
+      error.code
+    );
 
     return res.status(500).json({
       success: false,
@@ -77,12 +196,28 @@ export const createCustomer = async (req, res) => {
   }
 };
 
-
- // Get all registered customers
+// Get registered customers with optional filters
 export const getCustomers = async (req, res) => {
   try {
-    const customers = await Customer.find()
-      .sort({ createdAt: -1 });
+    let filter;
+
+    // Validate query parameters
+    try {
+      filter = buildCustomerFilter(req.query);
+    } catch (validationError) {
+      return res.status(400).json({
+        success: false,
+        message: validationError.message,
+      });
+    }
+
+    // Load matching customers
+    const customers = await Customer.find(filter)
+      .sort({
+        createdAt: -1,
+        _id: -1,
+      })
+      .lean();
 
     return res.status(200).json({
       success: true,
@@ -98,6 +233,7 @@ export const getCustomers = async (req, res) => {
     });
   }
 };
+
 
 export const getCustomerById = async (req, res) => {
   try {
@@ -132,6 +268,15 @@ export const getCustomerById = async (req, res) => {
 
 export const updateCustomer = async (req, res) => {
   try {
+    if (
+      !mongoose.isObjectIdOrHexString(req.params.id)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid customer ID",
+      });
+    }
+
     const validation = validateCustomer(req.body);
 
     if (!validation.isValid) {
@@ -145,48 +290,121 @@ export const updateCustomer = async (req, res) => {
     const { fullName, nic, phone, address } =
       validation.values;
 
-    const existingCustomer = await Customer.findOne({
+    const updatedValues = {
+      fullName,
       nic,
-      _id: { $ne: req.params.id },
-    });
+      phone,
+      address,
+    };
 
-    if (existingCustomer) {
-      return res.status(409).json({
-        success: false,
-        message: "NIC already registered to another customer",
-        errors: {
-          nic: "This NIC belongs to another customer",
-        },
-      });
-    }
+    const result = await runCustomerTransaction(
+      async (session) => {
+        const currentCustomer = await Customer.findById(
+          req.params.id
+        ).session(session);
 
-    const customer = await Customer.findByIdAndUpdate(
-      req.params.id,
-      {
-        fullName,
-        nic,
-        phone,
-        address,
-      },
-      {
-        new: true,
-        runValidators: true,
+        if (!currentCustomer) {
+          throw customerError(
+            404,
+            "Customer not found"
+          );
+        }
+
+        const changedFields =
+          getCustomerChangedFields(
+            currentCustomer,
+            updatedValues
+          );
+
+        // Do not create unnecessary audit logs
+        if (changedFields.length === 0) {
+          return {
+            customer: currentCustomer,
+            changed: false,
+          };
+        }
+
+        if (changedFields.includes("nic")) {
+          const existingCustomer =
+            await Customer.findOne({
+              nic,
+              _id: {
+                $ne: currentCustomer._id,
+              },
+            }).session(session);
+
+          if (existingCustomer) {
+            throw customerError(
+              409,
+              "NIC already registered to another customer",
+              {
+                nic: "This NIC belongs to another customer",
+              }
+            );
+          }
+        }
+
+        const changes = {};
+
+        for (const field of changedFields) {
+          changes[field] = updatedValues[field];
+        }
+
+        const customer =
+          await Customer.findByIdAndUpdate(
+            currentCustomer._id,
+            {
+              $set: changes,
+            },
+            {
+              new: true,
+              runValidators: true,
+              session,
+            }
+          );
+
+        if (!customer) {
+          throw customerError(
+            404,
+            "Customer not found"
+          );
+        }
+
+        await createAuditLog({
+          req,
+          action: "CUSTOMER_UPDATED",
+          targetType: "Customer",
+          targetId: customer._id,
+          details: {
+            customerCode: customer.customerCode,
+            changedFields,
+          },
+          session,
+        });
+
+        return {
+          customer,
+          changed: true,
+        };
       }
     );
 
-    if (!customer) {
-      return res.status(404).json({
+    return res.status(200).json({
+      success: true,
+      message: result.changed
+        ? "Customer updated successfully"
+        : "No customer changes detected",
+      customer: result.customer,
+    });
+  } catch (error) {
+    if ([404, 409].includes(error.statusCode)) {
+      return res.status(error.statusCode).json({
         success: false,
-        message: "Customer not found",
+        message: error.message,
+        errors: error.errors,
       });
     }
 
-    return res.status(200).json({
-      success: true,
-      message: "Customer updated successfully",
-      customer,
-    });
-  } catch (error) {
     if (error.code === 11000) {
       return res.status(409).json({
         success: false,
@@ -201,7 +419,11 @@ export const updateCustomer = async (req, res) => {
       });
     }
 
-    console.error("Update Customer Error:", error);
+    console.error(
+      "Update Customer Error:",
+      error.name,
+      error.code
+    );
 
     return res.status(500).json({
       success: false,
@@ -214,7 +436,16 @@ export const updateCustomer = async (req, res) => {
 
 export const updateCustomerStatus = async (req, res) => {
   try {
-    const { status } = req.body;
+    if (
+      !mongoose.isObjectIdOrHexString(req.params.id)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid customer ID",
+      });
+    }
+
+    const { status } = req.body || {};
 
     if (!["active", "inactive"].includes(status)) {
       return res.status(400).json({
@@ -223,28 +454,93 @@ export const updateCustomerStatus = async (req, res) => {
       });
     }
 
-    const customer = await Customer.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      {
-        new: true,
-        runValidators: true,
+    const result = await runCustomerTransaction(
+      async (session) => {
+        const currentCustomer = await Customer.findById(
+          req.params.id
+        ).session(session);
+
+        if (!currentCustomer) {
+          throw customerError(
+            404,
+            "Customer not found"
+          );
+        }
+
+        const previousStatus =
+          currentCustomer.status;
+
+        const action =
+          getCustomerStatusAuditAction(
+            previousStatus,
+            status
+          );
+
+        // Ignore repeated status requests
+        if (!action) {
+          return {
+            customer: currentCustomer,
+            changed: false,
+          };
+        }
+
+        const customer =
+          await Customer.findByIdAndUpdate(
+            currentCustomer._id,
+            {
+              $set: {
+                status,
+              },
+            },
+            {
+              new: true,
+              runValidators: true,
+              session,
+            }
+          );
+
+        if (!customer) {
+          throw customerError(
+            404,
+            "Customer not found"
+          );
+        }
+
+        await createAuditLog({
+          req,
+          action,
+          targetType: "Customer",
+          targetId: customer._id,
+          details: {
+            customerCode: customer.customerCode,
+            previousStatus,
+            newStatus: customer.status,
+          },
+          session,
+        });
+
+        return {
+          customer,
+          changed: true,
+        };
       }
     );
 
-    if (!customer) {
+    return res.status(200).json({
+      success: true,
+      message: result.changed
+        ? `Customer ${status} successfully`
+        : `Customer is already ${status}`,
+      customer: result.customer,
+    });
+  } catch (error) {
+    if (error.statusCode === 404) {
       return res.status(404).json({
         success: false,
-        message: "Customer not found",
+        message: error.message,
       });
     }
 
-    return res.status(200).json({
-      success: true,
-      message: `Customer ${status} successfully`,
-      customer,
-    });
-  } catch (error) {
     if (error.name === "CastError") {
       return res.status(400).json({
         success: false,
@@ -252,11 +548,89 @@ export const updateCustomerStatus = async (req, res) => {
       });
     }
 
-    console.error("Update Customer Status Error:", error);
+    console.error(
+      "Update Customer Status Error:",
+      error.name,
+      error.code
+    );
 
     return res.status(500).json({
       success: false,
       message: "Failed to update customer status",
+    });
+  }
+};
+
+
+// Search customer for legacy pawn loan migration
+export const lookupLegacyCustomer = async (
+  req,
+  res
+) => {
+  res.set("Cache-Control", "no-store");
+
+  try {
+    const { nic } = req.body ?? {};
+
+    const customer =
+      await findLegacyCustomerByNic({
+        nic,
+      });
+
+    // Customer not registered
+    if (!customer) {
+      return res.status(200).json({
+        success: true,
+        found: false,
+        canLink: false,
+        requiresRegistration: true,
+        customer: null,
+        message:
+          "Customer is not registered. Register the customer first.",
+      });
+    }
+
+    const eligibility =
+      getLegacyCustomerEligibility(customer);
+
+    let message = "Existing customer found";
+
+    if (eligibility.requiresReactivation) {
+      message =
+        "Customer is inactive. Reactivate the customer first.";
+    } else if (
+      eligibility.requiresInformationUpdate
+    ) {
+      message =
+        "Customer information must be completed first.";
+    }
+
+    return res.status(200).json({
+      success: true,
+      found: true,
+      requiresRegistration: false,
+      ...eligibility,
+      customer,
+      message,
+    });
+
+  } catch (error) {
+    if (error instanceof LegacyCustomerError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    console.error(
+      "Legacy Customer Lookup Error:",
+      error.name,
+      error.code
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to search legacy customer",
     });
   }
 };

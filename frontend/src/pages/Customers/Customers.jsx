@@ -26,6 +26,8 @@ const emptyForm = {
 export default function Customers() {
   const [customers, setCustomers] = useState([]);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] =
+  useState("all");
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
@@ -243,16 +245,42 @@ export default function Customers() {
     }
   };
 
-  const filteredCustomers = customers.filter((customer) => {
-    const query = search.toLowerCase();
+// Customer summary counts
+const totalCustomers = customers.length;
 
-    return (
-      customer.fullName?.toLowerCase().includes(query) ||
-      customer.customerCode?.toLowerCase().includes(query) ||
-      customer.nic?.toLowerCase().includes(query) ||
-      customer.phone?.includes(query)
-    );
-  });
+const activeCustomers = customers.filter(
+  (customer) => customer.status === "active"
+).length;
+
+const inactiveCustomers = customers.filter(
+  (customer) => customer.status === "inactive"
+).length;
+
+// Apply search and status filters
+const filteredCustomers = customers.filter(
+  (customer) => {
+    const query = search.trim().toLowerCase();
+
+    const matchesStatus =
+      statusFilter === "all" ||
+      customer.status === statusFilter;
+
+    const matchesSearch =
+      !query ||
+      customer.fullName
+        ?.toLowerCase()
+        .includes(query) ||
+      customer.customerCode
+        ?.toLowerCase()
+        .includes(query) ||
+      customer.nic
+        ?.toLowerCase()
+        .includes(query) ||
+      customer.phone?.includes(query);
+
+    return matchesStatus && matchesSearch;
+  }
+);
 
   return (
     <div className="customers-page">
@@ -268,25 +296,99 @@ export default function Customers() {
         </button>
       </div>
 
-      <div className="customer-summary">
-        <div className="summary-icon">
-          <Users size={25} />
-        </div>
+     <div className="customer-summary-grid">
+  {/* Total Customers */}
+  <button
+    type="button"
+    className={`customer-summary ${
+      statusFilter === "all"
+        ? "selected-summary"
+        : ""
+    }`}
+    onClick={() => setStatusFilter("all")}
+    aria-pressed={statusFilter === "all"}
+  >
+    <div className="summary-icon total-icon">
+      <Users size={25} />
+    </div>
 
-        <div>
-          <span>Total Customers</span>
-          <h2>{customers.length}</h2>
-        </div>
-      </div>
+    <div className="summary-content">
+      <span>Total Customers</span>
+      <h2>{totalCustomers}</h2>
+    </div>
+  </button>
+
+  {/* Active Customers */}
+  <button
+    type="button"
+    className={`customer-summary ${
+      statusFilter === "active"
+        ? "selected-summary"
+        : ""
+    }`}
+    onClick={() => setStatusFilter("active")}
+    aria-pressed={statusFilter === "active"}
+  >
+    <div className="summary-icon active-icon">
+      <UserRoundCheck size={25} />
+    </div>
+
+    <div className="summary-content">
+      <span>Active Customers</span>
+      <h2>{activeCustomers}</h2>
+    </div>
+  </button>
+
+  {/* Inactive Customers */}
+  <button
+    type="button"
+    className={`customer-summary ${
+      statusFilter === "inactive"
+        ? "selected-summary"
+        : ""
+    }`}
+    onClick={() => setStatusFilter("inactive")}
+    aria-pressed={statusFilter === "inactive"}
+  >
+    <div className="summary-icon inactive-icon">
+      <UserRoundX size={25} />
+    </div>
+
+    <div className="summary-content">
+      <span>Inactive Customers</span>
+      <h2>{inactiveCustomers}</h2>
+    </div>
+  </button>
+</div>
 
       {success && <div className="customer-success">{success}</div>}
       {error && <div className="customer-error">{error}</div>}
 
       <div className="customers-panel">
         <div className="customers-toolbar">
-          <h3>All Customers</h3>
+          <h3>
+  {statusFilter === "active"
+    ? "Active Customers"
+    : statusFilter === "inactive"
+      ? "Inactive Customers"
+      : "All Customers"}
+</h3>
 
           <div className="toolbar-actions">
+
+<select
+  className="customer-status-filter"
+  value={statusFilter}
+  onChange={(event) =>
+    setStatusFilter(event.target.value)
+  }
+  aria-label="Filter customers by status"
+>
+  <option value="all">All Status</option>
+  <option value="active">Active</option>
+  <option value="inactive">Inactive</option>
+</select>
+
             <div className="search-box">
               <Search size={18} />
               <input
@@ -307,6 +409,29 @@ export default function Customers() {
             </button>
           </div>
         </div>
+
+        {!loading && (
+  <div className="customer-results-info">
+    <span>
+      Showing {filteredCustomers.length} of{" "}
+      {totalCustomers} customers
+    </span>
+
+    {(search || statusFilter !== "all") && (
+      <button
+        type="button"
+        className="clear-customer-filters"
+        onClick={() => {
+          setSearch("");
+          setStatusFilter("all");
+        }}
+      >
+        <X size={14} />
+        Clear Filters
+      </button>
+    )}
+  </div>
+)}
 
         <div className="customers-table-wrapper">
           <table className="customers-table">

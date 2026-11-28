@@ -2,6 +2,9 @@
 import LoanSettings from "../models/LoanSettings.js";
 import mongoose from "mongoose";
 import { createAuditLog } from "../utils/auditLogger.js";
+import {
+  validateSupportedInterestSettings,
+} from "../utils/interestSettingsValidator.js";
 
 // Allowed settings and their supported values
 const allowedFields = {
@@ -169,15 +172,23 @@ function validateUpdates(body) {
         }
       }
 
-      // Renewal duration safety validation
-if (path === "renewal.durationMonths") {
+    // Loan and renewal duration safety validation
+if (
+  path === "renewal.durationMonths" ||
+  path === "loan.defaultDurationMonths"
+) {
   if (
     !Number.isSafeInteger(value) ||
     value < 1 ||
     value > 120
   ) {
+    const fieldName =
+      path === "loan.defaultDurationMonths"
+        ? "Loan duration"
+        : "Renewal duration";
+
     throw new Error(
-      "Renewal duration must be between 1 and 120 months"
+      `${fieldName} must be between 1 and 120 months`
     );
   }
 }
@@ -318,6 +329,34 @@ if (previousVersion !== expectedVersion) {
 }
 
 
+// Validate the final interest configuration
+const hasInterestUpdates = Object.keys(updates).some(
+  (path) => path.startsWith("interest.")
+);
+
+if (hasInterestUpdates) {
+  const mergedInterestSettings =
+    currentSettings.interest.toObject();
+
+  for (const [path, value] of Object.entries(updates)) {
+    if (path.startsWith("interest.")) {
+      const field = path.split(".")[1];
+
+      mergedInterestSettings[field] = value;
+    }
+  }
+
+  try {
+    validateSupportedInterestSettings(
+      mergedInterestSettings
+    );
+  } catch (validationError) {
+    validationError.statusCode = 400;
+    throw validationError;
+  }
+}
+
+
       const changes = {};
       const actualUpdates = {};
 
@@ -388,6 +427,13 @@ if (previousVersion !== expectedVersion) {
     });
   } catch (error) {
     console.error("Update Loan Settings Error:", error);
+
+    if (error.statusCode === 400) {
+  return res.status(400).json({
+    success: false,
+    message: error.message,
+  });
+}
 
     if (
       error.statusCode === 409 ||

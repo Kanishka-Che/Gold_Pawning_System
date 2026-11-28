@@ -7,22 +7,18 @@ import PawnLoan from "../models/PawnLoan.js";
 import LoanSettings from "../models/LoanSettings.js";
 import { createAuditLog } from "../utils/auditLogger.js";
 import PawnPayment from "../models/PawnPayment.js";
+import { isValidMoney } from "../utils/moneyValidator.js";
+import {
+  validateSupportedInterestSettings,
+} from "../utils/interestSettingsValidator.js";
+import { addRenewalMonths } from "../utils/renewalDateCalculator.js";
 
 import {
-  calculateRemainingPrincipalDailyInterest,
-} from "../utils/remainingPrincipalInterest.js";
-
-import {
-  calculateOutstandingInterest,
-} from "../utils/outstandingInterest.js";
-
+  calculatePawnInterest,
+} from "../services/interestCalculator.js";
 
 import { generateLoanNumber } from "../utils/generateLoanNumber.js";
 
-import {
-  calculateLoanInterest,
-  calculateInterestPeriod,
-} from "../utils/interestCalculator.js";
 
 const isValidId = (id) =>
   typeof id === "string" &&
@@ -36,6 +32,30 @@ const transactionConflict = (message) => {
 
 // POST /api/pawn-loans
 export const createPawnLoan = async (req, res) => {
+
+  const allowedFields = [
+  "customerId",
+  "goldItemIds",
+  "principalAmount",
+];
+
+if (
+  !req.body ||
+  typeof req.body !== "object" ||
+  Array.isArray(req.body) ||
+  Object.keys(req.body).some(
+    (field) => !allowedFields.includes(field)
+  )
+) {
+  return res.status(400).json({
+    success: false,
+
+    message:
+      "Invalid new pawn loan fields",
+  });
+}
+
+
   const {
     customerId,
     goldItemIds,
@@ -50,11 +70,7 @@ export const createPawnLoan = async (req, res) => {
     goldItemIds.length > 50 ||
     !goldItemIds.every(isValidId) ||
     new Set(goldItemIds).size !== goldItemIds.length ||
-    typeof principalAmount !== "number" ||
-    !Number.isFinite(principalAmount) ||
-    principalAmount <= 0 ||
-    Math.round(principalAmount * 100) !==
-      principalAmount * 100
+    !isValidMoney(principalAmount)
   ) {
     return res.status(400).json({
       success: false,
@@ -97,35 +113,12 @@ export const createPawnLoan = async (req, res) => {
 
 const interestSettings = settings.interest;
 
-const allowedPrincipalMethods = [
-  "original_principal",
-  "remaining_principal",
-];
-
-const principalMethod =
-  interestSettings?.principalCalculationMethod;
-
-const calculationMethod =
-  interestSettings?.calculationMethod;
-
-const isSupportedCombination =
-  principalMethod === "original_principal" &&
-  ["monthly", "daily"].includes(calculationMethod) ||
-  principalMethod === "remaining_principal" &&
-  calculationMethod === "daily";
-
-if (
-  !allowedPrincipalMethods.includes(principalMethod) ||
-  !isSupportedCombination ||
-  !Number.isSafeInteger(
-    interestSettings?.minimumInterestDays
-  ) ||
-  interestSettings.minimumInterestDays !== 0 ||
-  interestSettings.chargeFullFirstMonth !== false
-) {
+try {
+  validateSupportedInterestSettings(interestSettings);
+} catch (validationError) {
   const error = new Error(
-    "Loan interest settings are unconfirmed or unsupported. " +
-    "Ask an Admin to configure a supported interest calculation method."
+    validationError.message +
+      ". Ask an Admin to configure supported interest settings."
   );
 
   error.statusCode = 409;
@@ -148,22 +141,39 @@ if (
       const loanNumber = await generateLoanNumber(session);
 
       // 4. Calculate dates
-      const issueDate = new Date();
-      const maturityDate = new Date(issueDate);
+const durationMonths =
+  settings.loan?.defaultDurationMonths;
 
-      maturityDate.setUTCMonth(
-        maturityDate.getUTCMonth() +
-          settings.loan.defaultDurationMonths
-      );
+if (
+  !Number.isSafeInteger(durationMonths) ||
+  durationMonths < 1 ||
+  durationMonths > 120
+) {
+  const error = new Error(
+    "Invalid loan duration settings"
+  );
+
+  error.statusCode = 409;
+  throw error;
+}
+
+const issueDate = new Date();
+
+const maturityDate = addRenewalMonths({
+  baseDate: issueDate,
+  durationMonths,
+});
 
       // 5. Create loan
       const [loan] = await PawnLoan.create(
         [
-          {
-            loanNumber,
-            customer: customer._id,
-            goldItems: goldItemIds,
-            principalAmount,
+        {
+  loanNumber,
+  recordSource: "new",
+  settingsSource: "shop_settings",
+  customer: customer._id,
+  goldItems: goldItemIds,
+  principalAmount,
             interestRate: settings.interest.rate,
             issueDate,
             maturityDate,
@@ -354,18 +364,24 @@ const matchingCustomers = await Customer.find({
 
  // Search by Loan Number, NIC, Customer Name or Customer Code
   filter.$or = [
-    {
-      loanNumber: {
-        $regex: escapedSearch,
-        $options: "i",
-      },
+  {
+    loanNumber: {
+      $regex: escapedSearch,
+      $options: "i",
     },
-    {
-      customer: {
-        $in: customerIds,
-      },
+  },
+  {
+    legacyTicketNumber: {
+      $regex: escapedSearch,
+      $options: "i",
     },
-  ];
+  },
+  {
+    customer: {
+      $in: customerIds,
+    },
+  },
+];
 }
 
 
@@ -510,11 +526,29 @@ export const cancelDraftPawnLoan = async (req, res) => {
     let cancelledLoan;
 
     await session.withTransaction(async () => {
+
+      // Prevent normal cancellation of legacy drafts
+const targetLoan = await PawnLoan.findById(
+  req.params.id
+)
+  .select("recordSource")
+  .session(session)
+  .lean();
+
+if (targetLoan?.recordSource === "legacy") {
+  throw transactionConflict(
+    "Legacy draft cancellation requires a separate migration workflow"
+  );
+}
+
       const loan = await PawnLoan.findOneAndUpdate(
-        {
-          _id: req.params.id,
-          status: "draft",
-        },
+       {
+  _id: req.params.id,
+  status: "draft",
+  recordSource: {
+    $ne: "legacy",
+  },
+},
         {
           $set: {
             status: "cancelled",
@@ -644,6 +678,13 @@ export const activatePawnLoan = async (req, res) => {
         throw error;
       }
 
+      // Legacy activation will use a separate migration workflow
+if (loan.recordSource === "legacy") {
+  throw transactionConflict(
+    "Legacy pawn loan activation is not available yet"
+  );
+}
+
       if (loan.status !== "draft") {
         const error = new Error(
           "Only draft pawn loans can be activated"
@@ -670,9 +711,10 @@ export const activatePawnLoan = async (req, res) => {
         loan.settingsSnapshot?.loan?.defaultDurationMonths;
 
       if (
-        !Number.isInteger(durationMonths) ||
-        durationMonths <= 0
-      ) {
+  !Number.isSafeInteger(durationMonths) ||
+  durationMonths < 1 ||
+  durationMonths > 120
+) {
         const error = new Error(
           "Invalid loan duration settings"
         );
@@ -681,25 +723,10 @@ export const activatePawnLoan = async (req, res) => {
       }
 
       // Add months without overflowing at month-end
-      const maturityDate = new Date(activationDate);
-      const originalDay = maturityDate.getUTCDate();
-
-      maturityDate.setUTCDate(1);
-      maturityDate.setUTCMonth(
-        maturityDate.getUTCMonth() + durationMonths
-      );
-
-      const lastDay = new Date(
-        Date.UTC(
-          maturityDate.getUTCFullYear(),
-          maturityDate.getUTCMonth() + 1,
-          0
-        )
-      ).getUTCDate();
-
-      maturityDate.setUTCDate(
-        Math.min(originalDay, lastDay)
-      );
+     const maturityDate = addRenewalMonths({
+  baseDate: activationDate,
+  durationMonths,
+});
 
       const goldUpdate = await GoldItem.updateMany(
         {
@@ -792,42 +819,54 @@ export const calculatePawnLoanInterestPreview = async ({
   session,
   calculationDate = new Date(),
 }) => {
+  // 1. Load pawn loan
   const loan = await PawnLoan.findById(loanId)
     .select(
-  "loanNumber principalAmount issueDate maturityDate status settingsVersion settingsSnapshot"
+  "loanNumber principalAmount issueDate maturityDate status settingsVersion settingsSnapshot recordSource legacyHistoryMode openingBalance"
 )
     .session(session)
     .lean();
 
+  // 2. Validate loan
   if (!loan) {
-    const error = new Error("Pawn loan not found");
+    const error = new Error(
+      "Pawn loan not found"
+    );
+
     error.statusCode = 404;
     throw error;
   }
+
+  // Prevent incorrect legacy interest calculations
+if (loan.recordSource === "legacy") {
+  throw transactionConflict(
+    "Legacy interest calculation is not available yet"
+  );
+}
 
   if (loan.status !== "active") {
     const error = new Error(
       "Interest preview is available only for active loans"
     );
+
     error.statusCode = 409;
     throw error;
   }
 
-  const interestSettings = loan.settingsSnapshot?.interest;
+  // 3. Read original loan settings snapshot
+  const interestSettings =
+    loan.settingsSnapshot?.interest;
 
   if (!interestSettings) {
     const error = new Error(
       "Loan interest settings are missing"
     );
+
     error.statusCode = 409;
     throw error;
   }
 
-  const period = calculateInterestPeriod({
-    issueDate: loan.issueDate,
-    calculationDate,
-  });
-
+  // 4. Load payment history
   const paymentRecords = await PawnPayment.find({
     pawnLoan: loan._id,
     paidAt: { $lte: calculationDate },
@@ -837,98 +876,31 @@ export const calculatePawnLoanInterestPreview = async ({
     .session(session)
     .lean();
 
-  const payments = paymentRecords.map((payment) => ({
-    paidAt: payment.paidAt.toISOString(),
-    principalPaid: payment.principalPaid,
-    interestPaid: payment.interestPaid,
-  }));
+  const payments = paymentRecords.map(
+    (payment) => ({
+      paidAt: payment.paidAt.toISOString(),
+      principalPaid: payment.principalPaid,
+      interestPaid: payment.interestPaid,
+    })
+  );
 
-  const {
-    calculationMethod,
-    principalCalculationMethod,
-    minimumInterestDays,
-    chargeFullFirstMonth,
-    rate,
-  } = interestSettings;
+  // 5. Calculate interest using common service
+  const result = calculatePawnInterest({
+    principalAmount: loan.principalAmount,
+    issueDate: loan.issueDate,
+    calculationDate,
+    interestSettings,
+    payments,
+  });
 
-  if (
-    !Number.isSafeInteger(minimumInterestDays) ||
-    minimumInterestDays !== 0 ||
-    chargeFullFirstMonth !== false
-  ) {
-    const error = new Error("Unsupported interest rules");
-    error.statusCode = 409;
-    throw error;
-  }
-
-  let result;
-
-  if (
-    principalCalculationMethod === "original_principal"
-  ) {
-    const originalResult = calculateLoanInterest({
-      principalAmount: loan.principalAmount,
-      interestSettings,
-      months: period.months,
-      days: period.days,
-    });
-
-    const balances = calculateOutstandingInterest({
-      accruedInterest: originalResult.interestAmount,
-      payments,
-    });
-
-    result = {
-      ...originalResult,
-      ...balances,
-    };
-  } else if (
-    principalCalculationMethod === "remaining_principal" &&
-    calculationMethod === "daily"
-  ) {
-    const remainingResult =
-      calculateRemainingPrincipalDailyInterest({
-        originalPrincipal: loan.principalAmount,
-        issueDate: loan.issueDate.toISOString(),
-        calculationDate: calculationDate.toISOString(),
-        payments,
-        monthlyRate: rate,
-      });
-
-    const balances = calculateOutstandingInterest({
-      accruedInterest: remainingResult.accruedInterest,
-      payments,
-    });
-
-    result = {
-      ...remainingResult,
-      ...balances,
-    };
-  } else {
-    const error = new Error(
-      "Unsupported interest calculation method"
-    );
-    error.statusCode = 409;
-    throw error;
-  }
-
+  // 6. Build preview response
   const preview = {
     loanNumber: loan.loanNumber,
     loanStatus: loan.status,
     issueDate: loan.issueDate,
     calculationDate,
-    elapsedDays: period.days,
-    chargedMonths:
-      calculationMethod === "monthly"
-        ? period.months
-        : null,
-    currency: "LKR",
 
     ...result,
-
-    calculationMethod,
-    principalCalculationMethod,
-    isFinalSettlementAmount: false,
   };
 
   return {
